@@ -1,0 +1,28 @@
+# Configuracion de Render para la app de reservas de futbol.
+# Plan free: sin tarjeta y no caduca. Los datos viven en Turso (persistentes).
+services:
+  - type: web
+    name: reserva-futbol-bariloche
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node --no-warnings src/server.js
+    healthCheckPath: /api/partidos
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Estos dos se cargan en el panel de Render (son secretos de Turso):
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      # Contrasena del panel y datos de pago (cargalos en el panel de Render):
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PAGO_TITULAR
+        sync: false
+      - key: PAGO_ALIAS
+        sync: false
+      - key: PAGO_BANCO
+        sync: false

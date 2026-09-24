@@ -1,0 +1,26 @@
+{
+  "name": "reservas-futbol",
+  "version": "1.0.0",
+  "description": "App de reservas de partidos de futbol (5v5 y 9v9) con pago por transferencia y panel de admin",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --no-warnings src/server.js",
+    "dev": "node --no-warnings --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": [
+    "futbol",
+    "reservas",
+    "partidos"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.0",
+    "multer": "^2.0.0"
+  }
+}

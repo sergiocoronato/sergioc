@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel del organizador ⚽</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="login-view" class="login-wrap">
+    <div class="login-card">
+      <div class="brand" style="justify-content:center;margin-bottom:8px;">
+        <span class="ball">⚽</span> Panel del <span class="accent">organizador</span>
+      </div>
+      <p class="modal-sub center">Ingresá la contraseña para administrar los partidos.</p>
+      <form id="form-login" class="form">
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" name="password" required placeholder="••••••••" />
+        </div>
+        <p class="form-error hidden" id="login-error"></p>
+        <button class="primary-btn full" type="submit">Entrar</button>
+      </form>
+      <a href="index.html" class="back-link">← Volver al sitio</a>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="panel-view" class="hidden">
+    <header class="topbar">
+      <div class="brand"><span class="ball">⚽</span> Panel <span class="accent">organizador</span></div>
+      <div class="admin-actions">
+        <a class="ghost-link" href="index.html">Ver sitio</a>
+        <button id="btn-logout" class="ghost-btn">Salir</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="admin-grid">
+        <!-- Crear partido -->
+        <section class="panel-box">
+          <h2>Nuevo partido</h2>
+          <form id="form-partido" class="form">
+            <div class="field">
+              <label>Tipo</label>
+              <select name="tipo" id="tipo-select">
+                <option value="5v5">5 vs 5 (10 jugadores)</option>
+                <option value="9v9">9 vs 9 (18 jugadores)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Título (opcional)</label>
+              <input name="titulo" placeholder="Fútbol de los viernes" />
+            </div>
+            <div class="field">
+              <label>Lugar</label>
+              <input name="lugar" required placeholder="Cancha La Bombonerita" />
+            </div>
+            <div class="two-cols">
+              <div class="field">
+                <label>Fecha</label>
+                <input name="fecha" type="date" required />
+              </div>
+              <div class="field">
+                <label>Hora</label>
+                <input name="hora" type="time" required />
+              </div>
+            </div>
+            <div class="two-cols">
+              <div class="field">
+                <label>Cupos</label>
+                <input name="cupos" type="number" id="cupos-input" min="2" value="10" />
+              </div>
+              <div class="field">
+                <label>Precio por jugador</label>
+                <input name="precio" type="number" min="0" value="0" placeholder="0" />
+              </div>
+            </div>
+            <p class="form-error hidden" id="partido-error"></p>
+            <button class="primary-btn full" type="submit">Crear partido</button>
+          </form>
+        </section>
+
+        <!-- Lista -->
+        <section class="panel-box wide">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2>Partidos</h2>
+            <button id="btn-refrescar-admin" class="ghost-btn">↻ Actualizar</button>
+          </div>
+          <div id="admin-lista"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal comprobante -->
+  <div id="modal-comp" class="modal-backdrop hidden">
+    <div class="modal">
+      <button class="modal-close" id="comp-close">✕</button>
+      <h3>Comprobante</h3>
+      <div id="comp-body" class="comp-body"></div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

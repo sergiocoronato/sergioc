@@ -1,0 +1,177 @@
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-card {
+  background: linear-gradient(180deg, var(--card), var(--bg-2));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 34px 30px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow);
+}
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+.back-link:hover { color: var(--text); }
+
+.admin-actions { display: flex; align-items: center; gap: 10px; }
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .admin-grid { grid-template-columns: 1fr; }
+}
+
+.panel-box {
+  background: linear-gradient(180deg, var(--card), var(--card-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.panel-box h2 { font-size: 1.15rem; margin-bottom: 16px; letter-spacing: -0.01em; }
+
+.two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.field select {
+  background: #0c1526;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.field select:focus { outline: none; border-color: var(--accent); }
+
+/* Partido admin item */
+.admin-partido {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: #0e1a30;
+}
+.ap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  cursor: pointer;
+}
+.ap-head:hover { background: #10203a; }
+.ap-info { display: flex; flex-direction: column; gap: 4px; }
+.ap-title { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.ap-sub { color: var(--muted); font-size: 0.85rem; }
+.ap-right { display: flex; align-items: center; gap: 12px; }
+
+.mini-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.mini-badge.nueve { background: rgba(56,189,248,0.14); color: #38bdf8; }
+
+.estado-chip {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.estado-chip.abierto { background: rgba(34,197,94,0.14); color: var(--accent); }
+.estado-chip.cerrado { background: rgba(148,163,184,0.14); color: var(--muted); }
+.estado-chip.cancelado { background: rgba(248,113,113,0.14); color: var(--danger); }
+
+.ocupacion { font-size: 0.85rem; color: var(--muted); }
+.ocupacion strong { color: var(--text); }
+
+.ap-body { padding: 0 18px 18px; border-top: 1px solid var(--border); }
+.ap-body.hidden { display: none; }
+
+.ap-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 0;
+}
+
+.chip-btn {
+  background: #16233f;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.chip-btn:hover { border-color: var(--accent); }
+.chip-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Tabla de reservas */
+.reservas-tabla { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.reservas-tabla th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.reservas-tabla td { padding: 10px; border-bottom: 1px solid #1a2740; vertical-align: middle; }
+.reservas-tabla tr:last-child td { border-bottom: none; }
+
+.r-estado {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.r-estado.pendiente { background: rgba(251,191,36,0.14); color: var(--warn); }
+.r-estado.confirmado { background: rgba(34,197,94,0.14); color: var(--accent); }
+.r-estado.rechazado { background: rgba(248,113,113,0.14); color: var(--danger); }
+.r-estado.expirado { background: rgba(148,163,184,0.14); color: var(--muted); }
+
+.row-actions { display: flex; gap: 6px; }
+.icon-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.icon-btn.ok { background: var(--accent-soft); color: var(--accent); }
+.icon-btn.no { background: rgba(248,113,113,0.14); color: var(--danger); }
+.icon-btn.view { background: #16233f; color: var(--muted); border: 1px solid var(--border); }
+.icon-btn:hover { filter: brightness(1.15); }
+
+.sin-reservas { color: var(--muted); font-size: 0.88rem; padding: 12px 0; }
+
+.comp-body img { width: 100%; border-radius: 12px; }
+.comp-body iframe { width: 100%; height: 60vh; border: none; border-radius: 12px; }
+
+.tel-link { color: var(--accent); text-decoration: none; }
+.tel-link:hover { text-decoration: underline; }
