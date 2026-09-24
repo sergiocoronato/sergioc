@@ -142,7 +142,7 @@ function renderReservas(reservas) {
       <td><span class="r-estado ${r.estado}">${r.estado}</span></td>
       <td>
         <div class="row-actions">
-          ${r.comprobante ? `<button class="icon-btn view" data-ver="${escapeHtml(r.comprobante)}">Ver</button>` : `<span class="ap-sub">sin comp.</span>`}
+          ${r.comprobante ? `<button class="icon-btn view" data-ver="${r.id}" data-mime="${escapeHtml(r.comprobante_mime || "")}">Ver</button>` : `<span class="ap-sub">sin comp.</span>`}
           ${r.estado !== "confirmado" ? `<button class="icon-btn ok" data-reserva="${r.id}" data-val="confirmado">✓</button>` : ""}
           ${r.estado !== "rechazado" ? `<button class="icon-btn no" data-reserva="${r.id}" data-val="rechazado">✕</button>` : ""}
         </div>
@@ -193,14 +193,14 @@ function wireEventos(partidos) {
 
   $$("[data-ver]").forEach((btn) => btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    verComprobante(btn.dataset.ver);
+    verComprobante(btn.dataset.ver, btn.dataset.mime);
   }));
 }
 
 // ---- Modal comprobante ----
-function verComprobante(archivo) {
-  const url = `/api/admin/comprobante/${archivo}`;
-  const esPdf = /\.pdf$/i.test(archivo);
+function verComprobante(reservaId, mime) {
+  const url = `/api/admin/comprobante/${reservaId}`;
+  const esPdf = (mime || "").includes("pdf");
   $("#comp-body").innerHTML = esPdf
     ? `<iframe src="${url}"></iframe>`
     : `<img src="${url}" alt="comprobante" />`;

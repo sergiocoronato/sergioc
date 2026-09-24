@@ -62,6 +62,20 @@ export async function initDb() {
     )
   `);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_reservas_partido ON reservas(partido_id)`);
+
+  // Columnas para guardar el comprobante DENTRO de la base (permanente).
+  // comprobante_data = archivo en base64, comprobante_mime = tipo (image/png, application/pdf, etc.)
+  await agregarColumnaSiFalta("reservas", "comprobante_data", "TEXT");
+  await agregarColumnaSiFalta("reservas", "comprobante_mime", "TEXT");
+}
+
+// Agrega una columna solo si todavia no existe (ALTER TABLE idempotente).
+async function agregarColumnaSiFalta(tabla, columna, tipo) {
+  const cols = (await db.execute(`PRAGMA table_info(${tabla})`)).rows;
+  const existe = cols.some((c) => c.name === columna);
+  if (!existe) {
+    await db.execute(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${tipo}`);
+  }
 }
 
 // Marca como expiradas las reservas pendientes sin comprobante que superaron su tiempo.
@@ -177,17 +191,30 @@ export async function crearReserva({ partido_id, nombre, apellido, telefono, min
   }
 }
 
+// Columnas "livianas" de una reserva (sin el contenido pesado del comprobante).
+const COLS_RESERVA = "id, partido_id, nombre, apellido, telefono, estado, comprobante, comprobante_mime, creado_en, expira_en";
+
 export async function obtenerReserva(id) {
-  return get(`SELECT * FROM reservas WHERE id = ?`, [id]);
+  return get(`SELECT ${COLS_RESERVA} FROM reservas WHERE id = ?`, [id]);
 }
 
-export async function adjuntarComprobante(id, comprobante) {
-  await run(`UPDATE reservas SET comprobante = ?, expira_en = NULL WHERE id = ?`, [comprobante, id]);
+// Guarda el comprobante dentro de la base: contenido en base64 + su tipo.
+// El campo "comprobante" guarda un nombre de referencia (para saber que hay archivo).
+export async function adjuntarComprobante(id, { nombre, data, mime }) {
+  await run(
+    `UPDATE reservas SET comprobante = ?, comprobante_data = ?, comprobante_mime = ?, expira_en = NULL WHERE id = ?`,
+    [nombre, data, mime, id]
+  );
   return obtenerReserva(id);
 }
 
+// Lee el contenido del comprobante (base64 + mime) para servirlo al admin.
+export async function obtenerComprobante(id) {
+  return get(`SELECT comprobante_data, comprobante_mime, comprobante FROM reservas WHERE id = ?`, [id]);
+}
+
 export async function listarReservasPorPartido(partido_id) {
-  return all(`SELECT * FROM reservas WHERE partido_id = ? ORDER BY creado_en ASC`, [partido_id]);
+  return all(`SELECT ${COLS_RESERVA} FROM reservas WHERE partido_id = ? ORDER BY creado_en ASC`, [partido_id]);
 }
 
 export async function cambiarEstadoReserva(id, estado) {

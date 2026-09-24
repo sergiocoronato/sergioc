@@ -3,8 +3,7 @@ import cookieParser from "cookie-parser";
 import multer from "multer";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import { dirname, join, extname } from "path";
-import { mkdirSync } from "fs";
+import { dirname, join } from "path";
 
 import { config } from "./config.js";
 import {
@@ -17,17 +16,13 @@ import {
   crearReserva,
   obtenerReserva,
   adjuntarComprobante,
+  obtenerComprobante,
   listarReservasPorPartido,
   cambiarEstadoReserva,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
-// Uploads dentro del volumen persistente si DATA_DIR esta seteado.
-const uploadsDir = config.dataDir
-  ? join(config.dataDir, "uploads")
-  : join(__dirname, "..", "uploads");
-mkdirSync(uploadsDir, { recursive: true });
 
 const app = express();
 app.set("trust proxy", 1); // detras del proxy del hosting (HTTPS)
@@ -36,15 +31,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ---- Subida de comprobantes ----
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const unico = crypto.randomBytes(8).toString("hex");
-    cb(null, `${Date.now()}-${unico}${extname(file.originalname)}`);
-  },
-});
+// En memoria: el archivo se guarda DENTRO de la base (Turso), no en disco.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
   fileFilter: (req, file, cb) => {
     const ok = /image\/(jpe?g|png|webp|gif)|application\/pdf/.test(file.mimetype);
@@ -141,7 +130,12 @@ app.post("/api/reservas/:id/comprobante", upload.single("comprobante"), wrap(asy
   }
   if (!req.file) return res.status(400).json({ error: "Subí un archivo (imagen o PDF)." });
 
-  const actualizada = await adjuntarComprobante(id, req.file.filename);
+  // Guardamos el archivo dentro de la base (base64) para que sea permanente.
+  const actualizada = await adjuntarComprobante(id, {
+    nombre: req.file.originalname || `comprobante-${id}`,
+    data: req.file.buffer.toString("base64"),
+    mime: req.file.mimetype,
+  });
   res.json({ reserva: actualizada, mensaje: "Comprobante recibido. Queda pendiente de confirmación." });
 }));
 
@@ -223,10 +217,17 @@ app.patch("/api/admin/reservas/:id/estado", requireAdmin, wrap(async (req, res) 
   res.json(await cambiarEstadoReserva(Number(req.params.id), estado));
 }));
 
-// Ver comprobante (solo admin)
-app.get("/api/admin/comprobante/:archivo", requireAdmin, (req, res) => {
-  res.sendFile(join(uploadsDir, req.params.archivo));
-});
+// Ver comprobante (solo admin) — se sirve desde la base por id de reserva.
+app.get("/api/admin/comprobante/:reservaId", requireAdmin, wrap(async (req, res) => {
+  const c = await obtenerComprobante(Number(req.params.reservaId));
+  if (!c || !c.comprobante_data) {
+    return res.status(404).json({ error: "Sin comprobante." });
+  }
+  const buffer = Buffer.from(c.comprobante_data, "base64");
+  res.setHeader("Content-Type", c.comprobante_mime || "application/octet-stream");
+  res.setHeader("Content-Disposition", `inline; filename="${(c.comprobante || "comprobante").replace(/"/g, "")}"`);
+  res.send(buffer);
+}));
 
 // =========================================================
 //  ESTATICOS
