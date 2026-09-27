@@ -45,7 +45,6 @@ async function cargarPartidos() {
     $("#vacio").classList.add("hidden");
 
     cont.innerHTML = partidos.map((p) => {
-      const pct = Math.min(100, Math.round((p.ocupados / p.cupos) * 100));
       const esNueve = p.tipo === "9v9";
       const lleno = p.lleno;
       return `
@@ -59,17 +58,13 @@ async function cargarPartidos() {
             <div class="row"><span class="icon">📅</span> ${formatFecha(p.fecha, p.hora)}</div>
             <div class="row"><span class="icon">📍</span> ${escapeHtml(p.lugar)}</div>
           </div>
-          <div class="cupos">
-            <div class="cupos-head">
-              <span>Cupos</span>
-              <span><strong>${p.ocupados}</strong> / ${p.cupos}</span>
-            </div>
-            <div class="bar ${lleno ? "lleno" : ""}"><span style="width:${pct}%"></span></div>
-          </div>
+          ${(!lleno && p.disponibles > 0 && p.disponibles <= 2)
+            ? `<div class="aviso-pocos">🔥 ¡Últimos ${p.disponibles} ${p.disponibles === 1 ? "lugar" : "lugares"}!</div>`
+            : ""}
           <div class="card-cta">
             ${lleno
               ? `<div class="btn-lleno">Completo 🙌</div>`
-              : `<button class="primary-btn full" data-id="${p.id}">Reservar mi lugar (${p.disponibles} libres)</button>`}
+              : `<button class="primary-btn full" data-id="${p.id}">Reservar mi lugar</button>`}
           </div>
         </article>`;
     }).join("");
