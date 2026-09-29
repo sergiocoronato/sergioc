@@ -106,9 +106,31 @@ async function contarConfirmados(partido_id) {
   return Number(r.n);
 }
 
+// Duracion del partido en minutos: se considera "finalizado" pasado este tiempo desde el inicio.
+const DURACION_MIN = 60;
+// Argentina es UTC-3. El servidor puede estar en UTC, asi que comparamos contra la hora local AR.
+const AHORA_AR = "datetime('now', '-3 hours')";
+
+// Devuelve true si el partido ya termino (paso su inicio + DURACION_MIN), en hora Argentina.
+function partidoFinalizado(p) {
+  if (!p?.fecha || !p?.hora) return false;
+  // Interpretamos fecha/hora como hora local de Argentina (UTC-3).
+  const inicio = new Date(`${p.fecha}T${p.hora}:00-03:00`);
+  if (isNaN(inicio)) return false;
+  const fin = new Date(inicio.getTime() + DURACION_MIN * 60 * 1000);
+  return Date.now() > fin.getTime();
+}
+
 export async function listarPartidos({ soloAbiertos = false } = {}) {
   await expirarReservasVencidas();
-  const where = soloAbiertos ? "WHERE estado = 'abierto'" : "";
+
+  let where = "";
+  if (soloAbiertos) {
+    // Vista publica: solo partidos abiertos y que TODAVIA no terminaron.
+    // Fin del partido = fecha + hora + DURACION_MIN. Si ya paso, no se muestra.
+    where = `WHERE estado = 'abierto'
+             AND datetime(fecha || ' ' || hora, '+${DURACION_MIN} minutes') > ${AHORA_AR}`;
+  }
   const partidos = await all(`SELECT * FROM partidos ${where} ORDER BY fecha ASC, hora ASC`);
 
   const out = [];
@@ -169,6 +191,7 @@ export async function crearReserva({ partido_id, nombre, apellido, telefono, min
     const partido = partidoRes.rows[0];
     if (!partido) throw new Error("PARTIDO_NO_EXISTE");
     if (partido.estado !== "abierto") throw new Error("PARTIDO_CERRADO");
+    if (partidoFinalizado(partido)) throw new Error("PARTIDO_CERRADO");
 
     const cntRes = await tx.execute({
       sql: `SELECT COUNT(*) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
