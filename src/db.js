@@ -67,6 +67,8 @@ export async function initDb() {
   // comprobante_data = archivo en base64, comprobante_mime = tipo (image/png, application/pdf, etc.)
   await agregarColumnaSiFalta("reservas", "comprobante_data", "TEXT");
   await agregarColumnaSiFalta("reservas", "comprobante_mime", "TEXT");
+  // Cantidad de lugares que ocupa la reserva (titular + acompañantes). Por defecto 1.
+  await agregarColumnaSiFalta("reservas", "cantidad", "INTEGER NOT NULL DEFAULT 1");
 }
 
 // Agrega una columna solo si todavia no existe (ALTER TABLE idempotente).
@@ -91,8 +93,9 @@ export async function expirarReservasVencidas() {
 }
 
 async function contarOcupados(partido_id) {
+  // Suma la cantidad de lugares (no la cantidad de reservas), porque cada reserva puede ocupar varios.
   const r = await get(
-    `SELECT COUNT(*) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
+    `SELECT COALESCE(SUM(COALESCE(cantidad, 1)), 0) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
     [partido_id]
   );
   return Number(r.n);
@@ -100,7 +103,7 @@ async function contarOcupados(partido_id) {
 
 async function contarConfirmados(partido_id) {
   const r = await get(
-    `SELECT COUNT(*) AS n FROM reservas WHERE partido_id = ? AND estado = 'confirmado'`,
+    `SELECT COALESCE(SUM(COALESCE(cantidad, 1)), 0) AS n FROM reservas WHERE partido_id = ? AND estado = 'confirmado'`,
     [partido_id]
   );
   return Number(r.n);
@@ -180,8 +183,14 @@ export async function eliminarPartido(id) {
   return run(`DELETE FROM partidos WHERE id = ?`, [id]);
 }
 
+// Cantidad maxima de lugares que puede pedir una persona en una sola reserva.
+export const MAX_LUGARES = 4;
+
 // Crea una reserva validando el cupo dentro de una transaccion (atomico).
-export async function crearReserva({ partido_id, nombre, apellido, telefono, minutosReserva }) {
+export async function crearReserva({ partido_id, nombre, apellido, telefono, cantidad = 1, minutosReserva }) {
+  // Aseguramos que la cantidad este entre 1 y MAX_LUGARES.
+  const lugares = Math.min(MAX_LUGARES, Math.max(1, Number(cantidad) || 1));
+
   const tx = await db.transaction("write");
   try {
     const partidoRes = await tx.execute({
@@ -194,16 +203,18 @@ export async function crearReserva({ partido_id, nombre, apellido, telefono, min
     if (partidoFinalizado(partido)) throw new Error("PARTIDO_CERRADO");
 
     const cntRes = await tx.execute({
-      sql: `SELECT COUNT(*) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
+      sql: `SELECT COALESCE(SUM(COALESCE(cantidad, 1)), 0) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
       args: [partido_id],
     });
     const ocupados = Number(cntRes.rows[0].n);
-    if (ocupados >= Number(partido.cupos)) throw new Error("SIN_CUPO");
+    const disponibles = Number(partido.cupos) - ocupados;
+    if (disponibles <= 0) throw new Error("SIN_CUPO");
+    if (lugares > disponibles) throw new Error("SIN_CUPO_SUFICIENTE");
 
     const info = await tx.execute({
-      sql: `INSERT INTO reservas (partido_id, nombre, apellido, telefono, estado, expira_en)
-            VALUES (?, ?, ?, ?, 'pendiente', datetime('now', ?))`,
-      args: [partido_id, nombre, apellido, telefono, `+${minutosReserva} minutes`],
+      sql: `INSERT INTO reservas (partido_id, nombre, apellido, telefono, cantidad, estado, expira_en)
+            VALUES (?, ?, ?, ?, ?, 'pendiente', datetime('now', ?))`,
+      args: [partido_id, nombre, apellido, telefono, lugares, `+${minutosReserva} minutes`],
     });
 
     await tx.commit();
@@ -215,7 +226,7 @@ export async function crearReserva({ partido_id, nombre, apellido, telefono, min
 }
 
 // Columnas "livianas" de una reserva (sin el contenido pesado del comprobante).
-const COLS_RESERVA = "id, partido_id, nombre, apellido, telefono, estado, comprobante, comprobante_mime, creado_en, expira_en";
+const COLS_RESERVA = "id, partido_id, nombre, apellido, telefono, cantidad, estado, comprobante, comprobante_mime, creado_en, expira_en";
 
 export async function obtenerReserva(id) {
   return get(`SELECT ${COLS_RESERVA} FROM reservas WHERE id = ?`, [id]);

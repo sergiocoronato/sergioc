@@ -91,6 +91,7 @@ app.post("/api/partidos/:id/reservar", async (req, res) => {
   const nombre = String(req.body.nombre || "").trim();
   const apellido = String(req.body.apellido || "").trim();
   const telefono = String(req.body.telefono || "").trim();
+  const cantidad = Number(req.body.cantidad) || 1;
 
   if (!nombre || !apellido || !telefono) {
     return res.status(400).json({ error: "Completá nombre, apellido y teléfono." });
@@ -102,6 +103,7 @@ app.post("/api/partidos/:id/reservar", async (req, res) => {
       nombre,
       apellido,
       telefono,
+      cantidad,
       minutosReserva: config.minutosReserva,
     });
     res.status(201).json({
@@ -114,6 +116,7 @@ app.post("/api/partidos/:id/reservar", async (req, res) => {
       PARTIDO_NO_EXISTE: [404, "El partido no existe."],
       PARTIDO_CERRADO: [409, "El partido ya no admite reservas."],
       SIN_CUPO: [409, "Se agotaron los cupos para este partido."],
+      SIN_CUPO_SUFICIENTE: [409, "No quedan tantos lugares disponibles. Probá con menos."],
     };
     const [code, msg] = map[err.message] || [500, "Error al reservar."];
     res.status(code).json({ error: msg });

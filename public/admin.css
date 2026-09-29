@@ -176,6 +176,7 @@
 .icon-btn:hover { filter: brightness(1.15); }
 
 .sin-reservas { color: var(--muted); font-size: 0.88rem; padding: 12px 0; }
+.acompanantes { color: var(--accent); font-weight: 700; font-size: 0.82rem; }
 
 .comp-body img { width: 100%; border-radius: 12px; }
 .comp-body iframe { width: 100%; height: 60vh; border: none; border-radius: 12px; }

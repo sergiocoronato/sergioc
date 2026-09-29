@@ -135,6 +135,7 @@ $("#form-reserva").addEventListener("submit", async (e) => {
     nombre: fd.get("nombre"),
     apellido: fd.get("apellido"),
     telefono: fd.get("telefono"),
+    cantidad: Number(fd.get("cantidad")) || 1,
   };
 
   try {
@@ -167,7 +168,12 @@ function mostrarPasoPago(pago, minutos) {
     ["CBU/CVU", pago.cbu],
     ["Banco", pago.banco],
   ];
-  if (partidoActual.precio) rows.unshift(["Importe", money(partidoActual.precio)]);
+  const lugares = Number(reservaActual?.cantidad) || 1;
+  if (partidoActual.precio) {
+    const total = partidoActual.precio * lugares;
+    const detalle = lugares > 1 ? `${money(total)} (${lugares} lugares)` : money(total);
+    rows.unshift(["Importe", detalle]);
+  }
 
   // No mostrar filas cuyo valor este vacio (ej: CBU si no se cargo).
   const rowsVisibles = rows.filter(([, v]) => v && String(v).trim() !== "");

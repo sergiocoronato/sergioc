@@ -136,9 +136,12 @@ function renderReservas(reservas) {
   if (!reservas || !reservas.length) {
     return `<p class="sin-reservas">Sin reservas todavía.</p>`;
   }
-  const filas = reservas.map((r) => `
+  const filas = reservas.map((r) => {
+    const cant = Number(r.cantidad) || 1;
+    const extra = cant > 1 ? ` <span class="acompanantes">(+${cant - 1})</span>` : "";
+    return `
     <tr>
-      <td>${escapeHtml(r.nombre)} ${escapeHtml(r.apellido)}</td>
+      <td>${escapeHtml(r.nombre)} ${escapeHtml(r.apellido)}${extra}</td>
       <td><a class="tel-link" href="https://wa.me/${r.telefono.replace(/\D/g, "")}" target="_blank">${escapeHtml(r.telefono)}</a></td>
       <td><span class="r-estado ${r.estado}">${r.estado}</span></td>
       <td>
@@ -148,7 +151,8 @@ function renderReservas(reservas) {
           ${r.estado !== "rechazado" ? `<button class="icon-btn no" data-reserva="${r.id}" data-val="rechazado">✕</button>` : ""}
         </div>
       </td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
 
   return `
     <table class="reservas-tabla">
@@ -216,9 +220,13 @@ async function copiarConfirmados(p, btn) {
   if (!confirmados.length) {
     texto += `Todavía no hay jugadores confirmados.`;
   } else {
-    texto += `✅ Confirmados (${confirmados.length}/${p.cupos}):\n`;
+    // El total cuenta lugares (sumando acompañantes), no cantidad de reservas.
+    const totalLugares = confirmados.reduce((acc, r) => acc + (Number(r.cantidad) || 1), 0);
+    texto += `✅ Confirmados (${totalLugares}/${p.cupos}):\n`;
     confirmados.forEach((r, i) => {
-      texto += `${i + 1}. ${r.nombre} ${r.apellido}\n`;
+      const cant = Number(r.cantidad) || 1;
+      const extra = cant > 1 ? ` (+${cant - 1})` : "";
+      texto += `${i + 1}. ${r.nombre} ${r.apellido}${extra}\n`;
     });
   }
 
