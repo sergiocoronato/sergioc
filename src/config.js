@@ -38,7 +38,7 @@ export const config = {
     // WhatsApp del organizador para enviar el comprobante (formato internacional, solo digitos).
     // Ej Bariloche: 54 9 2944 789951 -> 5492944789951
     // Si es argentino (empieza con 54) y falta el 9 de celular, se agrega automaticamente.
-    whatsapp: normalizarWhatsapp(process.env.WHATSAPP_ADMIN || ""),
+    whatsapp: normalizarWhatsapp(process.env.WHATSAPP_ADMIN || "+54 294 4789951"),
   },
 
   // Minutos que se reserva el cupo antes de que expire si no suben comprobante.
