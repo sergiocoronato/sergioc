@@ -126,6 +126,13 @@
 }
 .chip-btn:hover { border-color: var(--accent); }
 .chip-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+.chip-btn.wsp {
+  background: rgba(34, 197, 94, 0.14);
+  color: var(--accent);
+  border-color: rgba(34, 197, 94, 0.35);
+  font-weight: 600;
+}
+.chip-btn.wsp:hover { background: rgba(34, 197, 94, 0.22); border-color: var(--accent); }
 
 /* Tabla de reservas */
 .reservas-tabla { width: 100%; border-collapse: collapse; font-size: 0.88rem; }

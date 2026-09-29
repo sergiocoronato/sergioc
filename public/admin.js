@@ -121,6 +121,7 @@ function renderPartido(p) {
       </div>
       <div class="ap-body ${expandido ? "" : "hidden"}">
         <div class="ap-controls">
+          <button class="chip-btn wsp" data-copiar="${p.id}">📋 Copiar confirmados (WhatsApp)</button>
           ${p.estado !== "abierto" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="abierto">Reabrir</button>` : ""}
           ${p.estado !== "cerrado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cerrado">Cerrar</button>` : ""}
           ${p.estado !== "cancelado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cancelado">Cancelar</button>` : ""}
@@ -195,6 +196,41 @@ function wireEventos(partidos) {
     e.stopPropagation();
     verComprobante(btn.dataset.ver, btn.dataset.mime);
   }));
+
+  $$("[data-copiar]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const partido = partidos.find((x) => x.id === Number(btn.dataset.copiar));
+    if (partido) await copiarConfirmados(partido, btn);
+  }));
+}
+
+// Arma el texto de confirmados y lo copia al portapapeles (para pegar en WhatsApp).
+async function copiarConfirmados(p, btn) {
+  const confirmados = (p.reservas || []).filter((r) => r.estado === "confirmado");
+  const tipo = p.tipo === "9v9" ? "9 vs 9" : "5 vs 5";
+
+  let texto = `⚽ ${p.titulo} (${tipo})\n`;
+  texto += `📅 ${formatFecha(p.fecha, p.hora)}\n`;
+  texto += `📍 ${p.lugar}\n\n`;
+
+  if (!confirmados.length) {
+    texto += `Todavía no hay jugadores confirmados.`;
+  } else {
+    texto += `✅ Confirmados (${confirmados.length}/${p.cupos}):\n`;
+    confirmados.forEach((r, i) => {
+      texto += `${i + 1}. ${r.nombre} ${r.apellido}\n`;
+    });
+  }
+
+  try {
+    await navigator.clipboard.writeText(texto);
+    const original = btn.textContent;
+    btn.textContent = "✓ ¡Copiado!";
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  } catch (err) {
+    // Fallback si el navegador bloquea el portapapeles: mostrar el texto para copiar a mano.
+    window.prompt("Copiá la lista (Ctrl+C):", texto);
+  }
 }
 
 // ---- Modal comprobante ----
