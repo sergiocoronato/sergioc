@@ -19,6 +19,18 @@ function money(n) {
   return "$" + Number(n).toLocaleString("es-AR");
 }
 
+// A partir de cuantas reservas se muestra el cartel "quedan 2 lugares", segun el tamano del partido.
+// 10 cupos -> desde 5 reservas | 18 cupos -> desde 15 reservas | otros -> cuando faltan 2 para llenar.
+function umbralAviso(cupos) {
+  if (cupos === 10) return 5;
+  if (cupos === 18) return 15;
+  return Math.max(1, cupos - 2);
+}
+
+function debeAvisarPocos(p) {
+  return p.ocupados >= umbralAviso(Number(p.cupos));
+}
+
 function toast(msg) {
   let t = $(".toast");
   if (!t) {
@@ -47,6 +59,7 @@ async function cargarPartidos() {
     cont.innerHTML = partidos.map((p) => {
       const esNueve = p.tipo === "9v9";
       const lleno = p.lleno;
+      const mostrarAviso = !lleno && debeAvisarPocos(p);
       return `
         <article class="card">
           <div class="card-top">
@@ -58,8 +71,8 @@ async function cargarPartidos() {
             <div class="row"><span class="icon">📅</span> ${formatFecha(p.fecha, p.hora)}</div>
             <div class="row"><span class="icon">📍</span> ${escapeHtml(p.lugar)}</div>
           </div>
-          ${(!lleno && p.disponibles > 0 && p.disponibles <= 2)
-            ? `<div class="aviso-pocos">🔥 ¡Últimos ${p.disponibles} ${p.disponibles === 1 ? "lugar" : "lugares"}!</div>`
+          ${mostrarAviso
+            ? `<div class="aviso-pocos">🔥 ¡Quedan 2 lugares disponibles!</div>`
             : ""}
           <div class="card-cta">
             ${lleno
