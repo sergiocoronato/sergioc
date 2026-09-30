@@ -20,10 +20,9 @@ function money(n) {
 }
 
 // A partir de cuantas reservas se muestra el cartel "quedan 2 lugares", segun el tamano del partido.
-// 10 cupos -> desde 5 reservas | 18 cupos -> desde 15 reservas | otros -> cuando faltan 2 para llenar.
+// 10 cupos -> desde 5 reservas (urgencia) | otros (ej 18) -> cuando quedan 2 lugares reales.
 function umbralAviso(cupos) {
   if (cupos === 10) return 5;
-  if (cupos === 18) return 15;
   return Math.max(1, cupos - 2);
 }
 
