@@ -104,6 +104,17 @@ function abrirModal(partido) {
     `${partido.tipo === "9v9" ? "9 vs 9" : "5 vs 5"} · ${formatFecha(partido.fecha, partido.hora)} · ${partido.lugar}`;
   $("#form-reserva").reset();
   $("#reserva-error").classList.add("hidden");
+
+  // Opciones de cantidad: desde 1 hasta los lugares que queden libres en este partido.
+  const sel = $("#cantidad-select");
+  const max = Math.max(1, Number(partido.disponibles) || 1);
+  sel.innerHTML = "";
+  for (let i = 1; i <= max; i++) {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = i === 1 ? "1 lugar (solo yo)" : `${i} lugares`;
+    sel.appendChild(opt);
+  }
 }
 
 function cerrarModal() {

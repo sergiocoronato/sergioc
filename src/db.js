@@ -183,13 +183,10 @@ export async function eliminarPartido(id) {
   return run(`DELETE FROM partidos WHERE id = ?`, [id]);
 }
 
-// Cantidad maxima de lugares que puede pedir una persona en una sola reserva.
-export const MAX_LUGARES = 4;
-
 // Crea una reserva validando el cupo dentro de una transaccion (atomico).
 export async function crearReserva({ partido_id, nombre, apellido, telefono, cantidad = 1, minutosReserva }) {
-  // Aseguramos que la cantidad este entre 1 y MAX_LUGARES.
-  const lugares = Math.min(MAX_LUGARES, Math.max(1, Number(cantidad) || 1));
+  // Minimo 1 lugar. El maximo real lo limita el cupo disponible del partido (validado abajo).
+  const lugares = Math.max(1, Number(cantidad) || 1);
 
   const tx = await db.transaction("write");
   try {
