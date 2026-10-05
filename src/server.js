@@ -22,7 +22,32 @@ import {
   cambiarEstadoReserva,
   eliminarReserva,
   crearReservaManual,
+  getConfigVarias,
+  setConfig,
 } from "./db.js";
+
+// Normaliza un numero de WhatsApp (igual que config.js): solo digitos, agrega 9 a celulares AR.
+function normalizarWhatsapp(valor) {
+  let n = String(valor || "").replace(/\D/g, "");
+  if (!n) return "";
+  if (n.startsWith("54") && !n.startsWith("549")) n = "549" + n.slice(2);
+  return n;
+}
+
+// Arma los datos de pago combinando lo guardado en Turso (prioridad) y las env (fallback).
+async function obtenerDatosPago() {
+  const guardado = await getConfigVarias(["pago_titular", "pago_alias", "pago_cbu", "pago_banco", "pago_whatsapp"]);
+  const usar = (g, def) => (g !== null && g !== undefined ? g : def);
+  return {
+    titular: usar(guardado.pago_titular, config.pago.titular),
+    alias: usar(guardado.pago_alias, config.pago.alias),
+    cbu: usar(guardado.pago_cbu, config.pago.cbu),
+    banco: usar(guardado.pago_banco, config.pago.banco),
+    whatsapp: guardado.pago_whatsapp !== null && guardado.pago_whatsapp !== undefined
+      ? normalizarWhatsapp(guardado.pago_whatsapp)
+      : config.pago.whatsapp,
+  };
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
@@ -72,9 +97,9 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 // =========================================================
 
 // Datos de pago que ve el jugador
-app.get("/api/pago", (req, res) => {
-  res.json(config.pago);
-});
+app.get("/api/pago", wrap(async (req, res) => {
+  res.json(await obtenerDatosPago());
+}));
 
 // Listar partidos abiertos (con cupos)
 app.get("/api/partidos", wrap(async (req, res) => {
@@ -277,6 +302,20 @@ app.post("/api/admin/partidos/:id/reserva-manual", requireAdmin, wrap(async (req
     const [code, msg] = map[err.message] || [500, "Error al agregar."];
     res.status(code).json({ error: msg });
   }
+}));
+
+// Ver / editar datos de pago desde el panel
+app.get("/api/admin/pago", requireAdmin, wrap(async (req, res) => {
+  res.json(await obtenerDatosPago());
+}));
+
+app.put("/api/admin/pago", requireAdmin, wrap(async (req, res) => {
+  await setConfig("pago_titular", String(req.body.titular || "").trim());
+  await setConfig("pago_alias", String(req.body.alias || "").trim());
+  await setConfig("pago_cbu", String(req.body.cbu || "").trim());
+  await setConfig("pago_banco", String(req.body.banco || "").trim());
+  await setConfig("pago_whatsapp", String(req.body.whatsapp || "").trim());
+  res.json(await obtenerDatosPago());
 }));
 
 // Ver comprobante (solo admin) — se sirve desde la base por id de reserva.

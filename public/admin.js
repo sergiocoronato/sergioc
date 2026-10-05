@@ -43,6 +43,7 @@ function mostrarPanel() {
   $("#login-view").classList.add("hidden");
   $("#panel-view").classList.remove("hidden");
   cargarAdmin();
+  cargarDatosPago();
 }
 
 $("#form-login").addEventListener("submit", async (e) => {
@@ -471,5 +472,40 @@ $$(".chip-filtro").forEach((btn) => btn.addEventListener("click", () => {
   filtroActual = btn.dataset.filtro;
   renderLista();
 }));
+
+// ---- Datos de pago ----
+async function cargarDatosPago() {
+  const res = await fetch("/api/admin/pago");
+  if (!res.ok) return;
+  const p = await res.json();
+  const f = $("#form-pago");
+  f.titular.value = p.titular || "";
+  f.alias.value = p.alias || "";
+  f.cbu.value = p.cbu || "";
+  f.banco.value = p.banco || "";
+  f.whatsapp.value = p.whatsapp || "";
+}
+
+$("#form-pago").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("#pago-error");
+  const ok = $("#pago-ok");
+  err.classList.add("hidden");
+  ok.classList.add("hidden");
+  const fd = new FormData(e.target);
+  const res = await fetch("/api/admin/pago", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(Object.fromEntries(fd.entries())),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    err.textContent = d.error || "No se pudo guardar.";
+    err.classList.remove("hidden");
+    return;
+  }
+  ok.classList.remove("hidden");
+  setTimeout(() => ok.classList.add("hidden"), 2500);
+});
 
 checkAuth();

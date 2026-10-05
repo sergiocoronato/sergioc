@@ -63,6 +63,14 @@ export async function initDb() {
   `);
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_reservas_partido ON reservas(partido_id)`);
 
+  // Config clave/valor (ej: datos de pago editables desde el panel).
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS config (
+      clave TEXT PRIMARY KEY,
+      valor TEXT
+    )
+  `);
+
   // Columnas para guardar el comprobante DENTRO de la base (permanente).
   // comprobante_data = archivo en base64, comprobante_mime = tipo (image/png, application/pdf, etc.)
   await agregarColumnaSiFalta("reservas", "comprobante_data", "TEXT");
@@ -261,6 +269,26 @@ export async function listarReservasPorPartido(partido_id) {
 export async function cambiarEstadoReserva(id, estado) {
   await run(`UPDATE reservas SET estado = ? WHERE id = ?`, [estado, id]);
   return obtenerReserva(id);
+}
+
+// ---- Config clave/valor ----
+export async function getConfig(clave) {
+  const r = await get(`SELECT valor FROM config WHERE clave = ?`, [clave]);
+  return r ? r.valor : null;
+}
+
+export async function getConfigVarias(claves) {
+  const out = {};
+  for (const c of claves) out[c] = await getConfig(c);
+  return out;
+}
+
+export async function setConfig(clave, valor) {
+  await run(
+    `INSERT INTO config (clave, valor) VALUES (?, ?)
+     ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor`,
+    [clave, valor ?? ""]
+  );
 }
 
 // Elimina una reserva (libera el cupo). Usado por el admin.

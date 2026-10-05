@@ -83,6 +83,33 @@
             <p class="form-error hidden" id="partido-error"></p>
             <button class="primary-btn full" type="submit">Crear partido</button>
           </form>
+
+          <h2 style="margin-top:26px;">Datos de pago</h2>
+          <form id="form-pago" class="form">
+            <div class="field">
+              <label>Titular</label>
+              <input name="titular" placeholder="Nombre del titular" />
+            </div>
+            <div class="field">
+              <label>Alias</label>
+              <input name="alias" placeholder="alias.mp" />
+            </div>
+            <div class="field">
+              <label>CBU/CVU (opcional)</label>
+              <input name="cbu" placeholder="Dejar vacío si no querés mostrarlo" />
+            </div>
+            <div class="field">
+              <label>Banco / Billetera</label>
+              <input name="banco" placeholder="Mercado Pago" />
+            </div>
+            <div class="field">
+              <label>WhatsApp (opcional)</label>
+              <input name="whatsapp" placeholder="+54 294 4789951" />
+            </div>
+            <p class="form-error hidden" id="pago-error"></p>
+            <p class="pago-ok hidden" id="pago-ok">✓ Datos de pago guardados</p>
+            <button class="primary-btn full" type="submit">Guardar datos de pago</button>
+          </form>
         </section>
 
         <!-- Lista -->
