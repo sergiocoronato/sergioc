@@ -201,12 +201,14 @@ function renderPartido(p) {
       <div class="ap-body ${expandido ? "" : "hidden"}">
         <div class="ap-controls">
           <button class="chip-btn wsp" data-copiar="${p.id}">📋 Copiar confirmados (WhatsApp)</button>
+          <button class="chip-btn" data-csv="${p.id}">⬇️ Exportar CSV</button>
           <button class="chip-btn" data-editar="${p.id}">✏️ Editar</button>
           ${p.estado !== "abierto" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="abierto">Reabrir</button>` : ""}
           ${p.estado !== "cerrado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cerrado">Cerrar</button>` : ""}
           ${p.estado !== "cancelado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cancelado">Cancelar</button>` : ""}
           <button class="chip-btn danger" data-eliminar="${p.id}">Eliminar</button>
         </div>
+        ${renderBarraOcupacion(p)}
         ${renderReservas(p.reservas)}
         <div class="agregar-jugador">
           <button class="chip-btn" data-agregar="${p.id}">➕ Agregar jugador</button>
@@ -220,6 +222,27 @@ function renderPartido(p) {
             <span class="agregar-error" data-agregar-error="${p.id}"></span>
           </form>
         </div>
+      </div>
+    </div>`;
+}
+
+// Barra de ocupacion: muestra ocupados (pendientes+confirmados) y confirmados sobre el total de cupos.
+function renderBarraOcupacion(p) {
+  const cupos = Number(p.cupos) || 0;
+  const ocupados = Number(p.ocupados) || 0;
+  const confirmados = Number(p.confirmados) || 0;
+  const pctOcup = cupos ? Math.min(100, Math.round((ocupados / cupos) * 100)) : 0;
+  const pctConf = cupos ? Math.min(100, Math.round((confirmados / cupos) * 100)) : 0;
+  return `
+    <div class="ocup-grafico">
+      <div class="ocup-barra">
+        <span class="ocup-fill-ocupados" style="width:${pctOcup}%"></span>
+        <span class="ocup-fill-confirmados" style="width:${pctConf}%"></span>
+      </div>
+      <div class="ocup-leyenda">
+        <span><i class="dot conf"></i> ${confirmados} pagados</span>
+        <span><i class="dot ocup"></i> ${ocupados} anotados</span>
+        <span class="ocup-total">${ocupados}/${cupos} cupos</span>
       </div>
     </div>`;
 }
@@ -298,6 +321,12 @@ function wireEventos(partidos) {
     e.stopPropagation();
     const partido = partidos.find((x) => x.id === Number(btn.dataset.copiar));
     if (partido) await copiarConfirmados(partido, btn);
+  }));
+
+  $$("[data-csv]").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const partido = partidos.find((x) => x.id === Number(btn.dataset.csv));
+    if (partido) exportarCSV(partido);
   }));
 
   $$("[data-editar]").forEach((btn) => btn.addEventListener("click", (e) => {
@@ -443,6 +472,27 @@ async function copiarConfirmados(p, btn) {
     // Fallback si el navegador bloquea el portapapeles: mostrar el texto para copiar a mano.
     window.prompt("Copiá la lista (Ctrl+C):", texto);
   }
+}
+
+// Exporta las reservas CONFIRMADAS de un partido a un archivo CSV (abre en Excel).
+function exportarCSV(p) {
+  const confirmados = (p.reservas || []).filter((r) => r.estado === "confirmado");
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const filas = [["Nombre", "Apellido", "Teléfono", "Lugares"]];
+  confirmados.forEach((r) => filas.push([r.nombre, r.apellido, r.telefono, Number(r.cantidad) || 1]));
+
+  // BOM para que Excel abra bien los acentos
+  const csv = "\uFEFF" + filas.map((f) => f.map(esc).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const nombreArch = `${p.titulo}-${p.fecha}`.replace(/[^\w\-]+/g, "_");
+  a.href = url;
+  a.download = `${nombreArch}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ---- Modal comprobante ----
