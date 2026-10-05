@@ -228,21 +228,6 @@ function mostrarPasoPago(pago, minutos) {
     });
   });
 
-  // Boton de WhatsApp: solo si hay numero configurado.
-  const wspBtn = $("#btn-wsp");
-  if (pago.whatsapp) {
-    const p = partidoActual;
-    const tipo = p.tipo === "9v9" ? "9 vs 9" : "5 vs 5";
-    const quien = reservaActual ? `${reservaActual.nombre} ${reservaActual.apellido}` : "";
-    const msg =
-      `Hola! Reservé un lugar en ${p.titulo} (${tipo}) del ${formatFecha(p.fecha, p.hora)} en ${p.lugar}` +
-      (quien ? ` a nombre de ${quien}` : "") +
-      `.`;
-    wspBtn.href = `https://wa.me/${pago.whatsapp}?text=${encodeURIComponent(msg)}`;
-    wspBtn.classList.remove("hidden");
-  } else {
-    wspBtn.classList.add("hidden");
-  }
 }
 
 // ---- Boton "Listo, ya transferí": lleva al mensaje final ----
