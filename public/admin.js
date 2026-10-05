@@ -129,6 +129,18 @@ function renderPartido(p) {
           <button class="chip-btn danger" data-eliminar="${p.id}">Eliminar</button>
         </div>
         ${renderReservas(p.reservas)}
+        <div class="agregar-jugador">
+          <button class="chip-btn" data-agregar="${p.id}">➕ Agregar jugador</button>
+          <form class="form-agregar hidden" data-form-agregar="${p.id}">
+            <input name="nombre" placeholder="Nombre" required />
+            <input name="apellido" placeholder="Apellido" />
+            <input name="telefono" placeholder="Teléfono" />
+            <input name="cantidad" type="number" min="1" value="1" title="Cantidad de lugares" />
+            <button class="chip-btn wsp" type="submit">Agregar</button>
+            <button class="chip-btn" type="button" data-cancelar-agregar="${p.id}">Cancelar</button>
+            <span class="agregar-error" data-agregar-error="${p.id}"></span>
+          </form>
+        </div>
       </div>
     </div>`;
 }
@@ -150,6 +162,7 @@ function renderReservas(reservas) {
           ${r.comprobante ? `<button class="icon-btn view" data-ver="${r.id}" data-mime="${escapeHtml(r.comprobante_mime || "")}">Ver</button>` : `<span class="ap-sub">sin comp.</span>`}
           ${r.estado !== "confirmado" ? `<button class="icon-btn ok" data-reserva="${r.id}" data-val="confirmado">✓</button>` : ""}
           ${r.estado !== "rechazado" ? `<button class="icon-btn no" data-reserva="${r.id}" data-val="rechazado">✕</button>` : ""}
+          <button class="icon-btn no" data-borrar-reserva="${r.id}" title="Borrar reserva">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -212,6 +225,57 @@ function wireEventos(partidos) {
     e.stopPropagation();
     const partido = partidos.find((x) => x.id === Number(btn.dataset.editar));
     if (partido) abrirEditar(partido);
+  }));
+
+  // Borrar una reserva puntual (libera el cupo)
+  $$("[data-borrar-reserva]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!confirm("¿Borrar esta reserva? Se libera el cupo.")) return;
+    await fetch(`/api/admin/reservas/${btn.dataset.borrarReserva}`, { method: "DELETE" });
+    cargarAdmin();
+  }));
+
+  // Mostrar el mini-form de agregar jugador
+  $$("[data-agregar]").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const form = document.querySelector(`[data-form-agregar="${btn.dataset.agregar}"]`);
+    if (form) { form.classList.remove("hidden"); btn.classList.add("hidden"); form.querySelector('[name="nombre"]').focus(); }
+  }));
+
+  // Cancelar el mini-form
+  $$("[data-cancelar-agregar]").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const id = btn.dataset.cancelarAgregar;
+    const form = document.querySelector(`[data-form-agregar="${id}"]`);
+    const abrir = document.querySelector(`[data-agregar="${id}"]`);
+    if (form) form.classList.add("hidden");
+    if (abrir) abrir.classList.remove("hidden");
+  }));
+
+  // Enviar el mini-form: agrega jugador confirmado
+  $$("[data-form-agregar]").forEach((form) => form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const id = form.dataset.formAgregar;
+    const fd = new FormData(form);
+    const errSpan = document.querySelector(`[data-agregar-error="${id}"]`);
+    errSpan.textContent = "";
+    const res = await fetch(`/api/admin/partidos/${id}/reserva-manual`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: fd.get("nombre"),
+        apellido: fd.get("apellido"),
+        telefono: fd.get("telefono"),
+        cantidad: Number(fd.get("cantidad")) || 1,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errSpan.textContent = data.error || "No se pudo agregar.";
+      return;
+    }
+    cargarAdmin();
   }));
 }
 

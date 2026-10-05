@@ -20,6 +20,8 @@ import {
   obtenerComprobante,
   listarReservasPorPartido,
   cambiarEstadoReserva,
+  eliminarReserva,
+  crearReservaManual,
 } from "./db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -243,6 +245,38 @@ app.patch("/api/admin/reservas/:id/estado", requireAdmin, wrap(async (req, res) 
     return res.status(400).json({ error: "Estado inválido." });
   }
   res.json(await cambiarEstadoReserva(Number(req.params.id), estado));
+}));
+
+// Eliminar una reserva (libera el cupo)
+app.delete("/api/admin/reservas/:id", requireAdmin, wrap(async (req, res) => {
+  await eliminarReserva(Number(req.params.id));
+  res.json({ ok: true });
+}));
+
+// Agregar un jugador manualmente (entra confirmado, para reservas por fuera de la web)
+app.post("/api/admin/partidos/:id/reserva-manual", requireAdmin, wrap(async (req, res) => {
+  const partido_id = Number(req.params.id);
+  const nombre = String(req.body.nombre || "").trim();
+  const apellido = String(req.body.apellido || "").trim();
+  const telefono = String(req.body.telefono || "").trim();
+  const cantidad = Number(req.body.cantidad) || 1;
+
+  if (!nombre) {
+    return res.status(400).json({ error: "Completá al menos el nombre." });
+  }
+
+  try {
+    const reserva = await crearReservaManual({ partido_id, nombre, apellido, telefono, cantidad });
+    res.status(201).json(reserva);
+  } catch (err) {
+    const map = {
+      PARTIDO_NO_EXISTE: [404, "El partido no existe."],
+      SIN_CUPO: [409, "No hay cupos disponibles."],
+      SIN_CUPO_SUFICIENTE: [409, "No quedan tantos lugares. Probá con menos."],
+    };
+    const [code, msg] = map[err.message] || [500, "Error al agregar."];
+    res.status(code).json({ error: msg });
+  }
 }));
 
 // Ver comprobante (solo admin) — se sirve desde la base por id de reserva.

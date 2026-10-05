@@ -263,4 +263,42 @@ export async function cambiarEstadoReserva(id, estado) {
   return obtenerReserva(id);
 }
 
+// Elimina una reserva (libera el cupo). Usado por el admin.
+export async function eliminarReserva(id) {
+  return run(`DELETE FROM reservas WHERE id = ?`, [id]);
+}
+
+// Crea una reserva cargada por el admin: entra directo como 'confirmado', sin expiracion.
+// Valida el cupo dentro de la transaccion, igual que crearReserva.
+export async function crearReservaManual({ partido_id, nombre, apellido, telefono, cantidad = 1 }) {
+  const lugares = Math.max(1, Number(cantidad) || 1);
+  const tx = await db.transaction("write");
+  try {
+    const partidoRes = await tx.execute({ sql: `SELECT * FROM partidos WHERE id = ?`, args: [partido_id] });
+    const partido = partidoRes.rows[0];
+    if (!partido) throw new Error("PARTIDO_NO_EXISTE");
+
+    const cntRes = await tx.execute({
+      sql: `SELECT COALESCE(SUM(COALESCE(cantidad, 1)), 0) AS n FROM reservas WHERE partido_id = ? AND estado IN ('pendiente','confirmado')`,
+      args: [partido_id],
+    });
+    const ocupados = Number(cntRes.rows[0].n);
+    const disponibles = Number(partido.cupos) - ocupados;
+    if (disponibles <= 0) throw new Error("SIN_CUPO");
+    if (lugares > disponibles) throw new Error("SIN_CUPO_SUFICIENTE");
+
+    const info = await tx.execute({
+      sql: `INSERT INTO reservas (partido_id, nombre, apellido, telefono, cantidad, estado, expira_en)
+            VALUES (?, ?, ?, ?, ?, 'confirmado', NULL)`,
+      args: [partido_id, nombre, apellido, telefono, lugares],
+    });
+
+    await tx.commit();
+    return obtenerReserva(Number(info.lastInsertRowid));
+  } catch (err) {
+    await tx.rollback();
+    throw err;
+  }
+}
+
 export default db;
