@@ -106,6 +106,54 @@
     </div>
   </div>
 
+  <!-- Modal editar partido -->
+  <div id="modal-editar" class="modal-backdrop hidden">
+    <div class="modal">
+      <button class="modal-close" id="editar-close">✕</button>
+      <h3>Editar partido</h3>
+      <form id="form-editar" class="form">
+        <input type="hidden" name="id" />
+        <div class="field">
+          <label>Tipo</label>
+          <select name="tipo" id="editar-tipo">
+            <option value="5v5">5 vs 5 (10 jugadores)</option>
+            <option value="9v9">9 vs 9 (18 jugadores)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Título</label>
+          <input name="titulo" placeholder="Fútbol de los viernes" />
+        </div>
+        <div class="field">
+          <label>Lugar</label>
+          <input name="lugar" required placeholder="Cancha La Bombonerita" />
+        </div>
+        <div class="two-cols">
+          <div class="field">
+            <label>Fecha</label>
+            <input name="fecha" type="date" required />
+          </div>
+          <div class="field">
+            <label>Hora</label>
+            <input name="hora" type="time" required />
+          </div>
+        </div>
+        <div class="two-cols">
+          <div class="field">
+            <label>Cupos</label>
+            <input name="cupos" type="number" id="editar-cupos" min="2" />
+          </div>
+          <div class="field">
+            <label>Precio por jugador</label>
+            <input name="precio" type="number" min="0" />
+          </div>
+        </div>
+        <p class="form-error hidden" id="editar-error"></p>
+        <button class="primary-btn full" type="submit">Guardar cambios</button>
+      </form>
+    </div>
+  </div>
+
   <script src="admin.js"></script>
 </body>
 </html>

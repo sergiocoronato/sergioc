@@ -122,6 +122,7 @@ function renderPartido(p) {
       <div class="ap-body ${expandido ? "" : "hidden"}">
         <div class="ap-controls">
           <button class="chip-btn wsp" data-copiar="${p.id}">📋 Copiar confirmados (WhatsApp)</button>
+          <button class="chip-btn" data-editar="${p.id}">✏️ Editar</button>
           ${p.estado !== "abierto" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="abierto">Reabrir</button>` : ""}
           ${p.estado !== "cerrado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cerrado">Cerrar</button>` : ""}
           ${p.estado !== "cancelado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cancelado">Cancelar</button>` : ""}
@@ -206,7 +207,67 @@ function wireEventos(partidos) {
     const partido = partidos.find((x) => x.id === Number(btn.dataset.copiar));
     if (partido) await copiarConfirmados(partido, btn);
   }));
+
+  $$("[data-editar]").forEach((btn) => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const partido = partidos.find((x) => x.id === Number(btn.dataset.editar));
+    if (partido) abrirEditar(partido);
+  }));
 }
+
+// ---- Editar partido ----
+function abrirEditar(p) {
+  const f = $("#form-editar");
+  f.id.value = p.id;
+  f.tipo.value = p.tipo;
+  f.titulo.value = p.titulo || "";
+  f.lugar.value = p.lugar || "";
+  f.fecha.value = p.fecha || "";
+  f.hora.value = p.hora || "";
+  f.cupos.value = p.cupos;
+  f.precio.value = p.precio || 0;
+  $("#editar-error").classList.add("hidden");
+  $("#modal-editar").classList.remove("hidden");
+}
+
+$("#editar-close").addEventListener("click", () => $("#modal-editar").classList.add("hidden"));
+$("#modal-editar").addEventListener("click", (e) => { if (e.target.id === "modal-editar") $("#modal-editar").classList.add("hidden"); });
+
+// Al cambiar el tipo, sugerir los cupos por defecto (sin pisar si ya los editó a mano no es critico aca).
+$("#editar-tipo").addEventListener("change", (e) => {
+  $("#editar-cupos").value = e.target.value === "9v9" ? 18 : 10;
+});
+
+$("#form-editar").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("#editar-error");
+  err.classList.add("hidden");
+  const fd = new FormData(e.target);
+  const id = fd.get("id");
+  const body = {
+    tipo: fd.get("tipo"),
+    titulo: fd.get("titulo"),
+    lugar: fd.get("lugar"),
+    fecha: fd.get("fecha"),
+    hora: fd.get("hora"),
+    cupos: Number(fd.get("cupos")),
+    precio: Number(fd.get("precio")) || 0,
+  };
+
+  const res = await fetch(`/api/admin/partidos/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    err.textContent = data.error || "No se pudo guardar.";
+    err.classList.remove("hidden");
+    return;
+  }
+  $("#modal-editar").classList.add("hidden");
+  cargarAdmin();
+});
 
 // Arma el texto de confirmados y lo copia al portapapeles (para pegar en WhatsApp).
 async function copiarConfirmados(p, btn) {

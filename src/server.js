@@ -11,6 +11,7 @@ import {
   listarPartidos,
   obtenerPartido,
   crearPartido,
+  editarPartido,
   actualizarEstadoPartido,
   eliminarPartido,
   crearReserva,
@@ -196,6 +197,30 @@ app.post("/api/admin/partidos", requireAdmin, wrap(async (req, res) => {
   }
 
   res.status(201).json(await crearPartido(data));
+}));
+
+// Editar un partido existente
+app.put("/api/admin/partidos/:id", requireAdmin, wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  const existente = await obtenerPartido(id);
+  if (!existente) return res.status(404).json({ error: "El partido no existe." });
+
+  const tipo = req.body.tipo === "9v9" ? "9v9" : "5v5";
+  const data = {
+    tipo,
+    titulo: String(req.body.titulo || "").trim() || (tipo === "9v9" ? "Partido 9 vs 9" : "Partido 5 vs 5"),
+    lugar: String(req.body.lugar || "").trim(),
+    fecha: String(req.body.fecha || "").trim(),
+    hora: String(req.body.hora || "").trim(),
+    cupos: Number(req.body.cupos) || (tipo === "9v9" ? 18 : 10),
+    precio: Number(req.body.precio) || 0,
+  };
+
+  if (!data.lugar || !data.fecha || !data.hora) {
+    return res.status(400).json({ error: "Completá lugar, fecha y hora." });
+  }
+
+  res.json(await editarPartido(id, data));
 }));
 
 app.patch("/api/admin/partidos/:id/estado", requireAdmin, wrap(async (req, res) => {

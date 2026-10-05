@@ -174,6 +174,16 @@ export async function crearPartido(data) {
   return obtenerPartido(Number(info.lastInsertRowid));
 }
 
+export async function editarPartido(id, data) {
+  await run(
+    `UPDATE partidos
+     SET tipo = ?, titulo = ?, lugar = ?, fecha = ?, hora = ?, cupos = ?, precio = ?
+     WHERE id = ?`,
+    [data.tipo, data.titulo, data.lugar, data.fecha, data.hora, data.cupos, data.precio, id]
+  );
+  return obtenerPartido(id);
+}
+
 export async function actualizarEstadoPartido(id, estado) {
   await run(`UPDATE partidos SET estado = ? WHERE id = ?`, [estado, id]);
   return obtenerPartido(id);
