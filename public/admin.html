@@ -91,6 +91,17 @@
             <h2>Partidos</h2>
             <button id="btn-refrescar-admin" class="ghost-btn">↻ Actualizar</button>
           </div>
+
+          <div class="lista-controles">
+            <input id="buscador" type="search" placeholder="🔎 Buscar jugador por nombre o teléfono..." />
+            <div class="filtros">
+              <button class="chip-filtro activo" data-filtro="proximos">Próximos</button>
+              <button class="chip-filtro" data-filtro="pasados">Historial</button>
+              <button class="chip-filtro" data-filtro="todos">Todos</button>
+            </div>
+          </div>
+
+          <div id="resultado-busqueda"></div>
           <div id="admin-lista"></div>
         </section>
       </div>

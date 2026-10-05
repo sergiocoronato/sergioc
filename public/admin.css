@@ -178,6 +178,46 @@
 .sin-reservas { color: var(--muted); font-size: 0.88rem; padding: 12px 0; }
 .acompanantes { color: var(--accent); font-weight: 700; font-size: 0.82rem; }
 
+/* Controles de lista: buscador + filtros */
+.lista-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+#buscador {
+  flex: 1;
+  min-width: 220px;
+  background: #0b1424;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+#buscador:focus { outline: none; border-color: var(--accent); }
+.filtros { display: flex; gap: 6px; }
+.chip-filtro {
+  background: #16233f;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip-filtro:hover { color: var(--text); }
+.chip-filtro.activo {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Agregar jugador manual */
 .agregar-jugador { margin-top: 14px; }
 .form-agregar {

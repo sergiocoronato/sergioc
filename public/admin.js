@@ -4,6 +4,19 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const abiertos = new Set(); // partidos con detalle expandido
 
+let partidosCache = [];      // ultimos partidos cargados del servidor
+let filtroActual = "proximos"; // proximos | pasados | todos
+let busquedaActual = "";
+
+// Un partido se considera finalizado 60 min despues de su inicio (hora Argentina UTC-3).
+function partidoFinalizado(p) {
+  if (!p.fecha || !p.hora) return false;
+  const inicio = new Date(`${p.fecha}T${p.hora}:00-03:00`);
+  if (isNaN(inicio)) return false;
+  const fin = new Date(inicio.getTime() + 60 * 60 * 1000);
+  return Date.now() > fin.getTime();
+}
+
 function formatFecha(fechaISO, hora) {
   const [y, m, d] = fechaISO.split("-").map(Number);
   const fecha = new Date(y, m - 1, d);
@@ -88,16 +101,81 @@ $("#form-partido").addEventListener("submit", async (e) => {
 async function cargarAdmin() {
   const res = await fetch("/api/admin/partidos");
   if (res.status === 401) { mostrarLogin(); return; }
-  const partidos = await res.json();
-  const cont = $("#admin-lista");
+  partidosCache = await res.json();
+  renderLista();
+}
 
-  if (!partidos.length) {
+// Aplica filtro (proximos/pasados/todos) y busqueda, y dibuja la lista.
+function renderLista() {
+  const cont = $("#admin-lista");
+  const resBusq = $("#resultado-busqueda");
+  resBusq.innerHTML = "";
+
+  if (!partidosCache.length) {
     cont.innerHTML = `<p class="sin-reservas">Todavía no creaste ningún partido.</p>`;
     return;
   }
 
-  cont.innerHTML = partidos.map((p) => renderPartido(p)).join("");
-  wireEventos(partidos);
+  // Busqueda de jugador: si hay texto, muestra coincidencias de todos los partidos.
+  const q = busquedaActual.trim().toLowerCase();
+  if (q) {
+    renderBusqueda(q);
+    cont.innerHTML = "";
+    return;
+  }
+
+  let lista = partidosCache.slice();
+  if (filtroActual === "proximos") lista = lista.filter((p) => !partidoFinalizado(p));
+  else if (filtroActual === "pasados") lista = lista.filter((p) => partidoFinalizado(p));
+  // "todos" no filtra
+
+  // Orden: proximos por fecha ascendente; pasados por fecha descendente (lo mas reciente primero).
+  lista.sort((a, b) => {
+    const ka = `${a.fecha} ${a.hora}`, kb = `${b.fecha} ${b.hora}`;
+    return filtroActual === "pasados" ? kb.localeCompare(ka) : ka.localeCompare(kb);
+  });
+
+  if (!lista.length) {
+    const txt = filtroActual === "pasados" ? "No hay partidos finalizados todavía." : "No hay partidos próximos.";
+    cont.innerHTML = `<p class="sin-reservas">${txt}</p>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map((p) => renderPartido(p)).join("");
+  wireEventos(lista);
+}
+
+// Busca un jugador por nombre/apellido/telefono en TODAS las reservas.
+function renderBusqueda(q) {
+  const resBusq = $("#resultado-busqueda");
+  const hits = [];
+  for (const p of partidosCache) {
+    for (const r of (p.reservas || [])) {
+      const texto = `${r.nombre} ${r.apellido} ${r.telefono}`.toLowerCase();
+      if (texto.includes(q)) hits.push({ p, r });
+    }
+  }
+  if (!hits.length) {
+    resBusq.innerHTML = `<p class="sin-reservas">Sin resultados para "${escapeHtml(q)}".</p>`;
+    return;
+  }
+  const filas = hits.map(({ p, r }) => {
+    const cant = Number(r.cantidad) || 1;
+    const extra = cant > 1 ? ` (+${cant - 1})` : "";
+    return `
+      <tr>
+        <td>${escapeHtml(r.nombre)} ${escapeHtml(r.apellido)}${extra}</td>
+        <td><a class="tel-link" href="https://wa.me/${(r.telefono||'').replace(/\D/g, "")}" target="_blank">${escapeHtml(r.telefono)}</a></td>
+        <td><span class="r-estado ${r.estado}">${r.estado}</span></td>
+        <td>${escapeHtml(p.titulo)}<br><span class="ap-sub">${formatFecha(p.fecha, p.hora)}</span></td>
+      </tr>`;
+  }).join("");
+  resBusq.innerHTML = `
+    <p class="ap-sub" style="margin-bottom:8px;">${hits.length} resultado(s):</p>
+    <table class="reservas-tabla">
+      <thead><tr><th>Jugador</th><th>Teléfono</th><th>Estado</th><th>Partido</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
 }
 
 function renderPartido(p) {
@@ -379,5 +457,19 @@ $("#comp-close").addEventListener("click", () => $("#modal-comp").classList.add(
 $("#modal-comp").addEventListener("click", (e) => { if (e.target.id === "modal-comp") $("#modal-comp").classList.add("hidden"); });
 
 $("#btn-refrescar-admin").addEventListener("click", cargarAdmin);
+
+// Buscador de jugador
+$("#buscador").addEventListener("input", (e) => {
+  busquedaActual = e.target.value;
+  renderLista();
+});
+
+// Filtros proximos / historial / todos
+$$(".chip-filtro").forEach((btn) => btn.addEventListener("click", () => {
+  $$(".chip-filtro").forEach((b) => b.classList.remove("activo"));
+  btn.classList.add("activo");
+  filtroActual = btn.dataset.filtro;
+  renderLista();
+}));
 
 checkAuth();
