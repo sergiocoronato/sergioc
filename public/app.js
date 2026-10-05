@@ -14,6 +14,13 @@ function formatFecha(fechaISO, hora) {
   return `${dias[fecha.getDay()]} ${d} ${meses[m - 1]} · ${hora} hs`;
 }
 
+const diasLargos = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+function partesFecha(fechaISO) {
+  const [y, m, d] = fechaISO.split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  return { dia: d, mes: meses[m - 1], dsemana: diasLargos[fecha.getDay()] };
+}
+
 function money(n) {
   if (!n) return "Gratis";
   return "$" + Number(n).toLocaleString("es-AR");
@@ -59,24 +66,37 @@ async function cargarPartidos() {
       const esNueve = p.tipo === "9v9";
       const lleno = p.lleno;
       const mostrarAviso = !lleno && debeAvisarPocos(p);
+      const f = partesFecha(p.fecha);
+      const gratis = !p.precio;
       return `
-        <article class="card">
-          <div class="card-top">
-            <span class="badge-tipo ${esNueve ? "nueve" : ""}">${p.tipo === "9v9" ? "9 vs 9" : "5 vs 5"}</span>
-            <span class="precio">${money(p.precio)}</span>
+        <article class="card ${esNueve ? "nueve" : ""}">
+          <div class="card-head">
+            <span class="badge-tipo ${esNueve ? "nueve" : ""}">${esNueve ? "9 vs 9" : "5 vs 5"}</span>
+            <span class="precio ${gratis ? "gratis" : ""}">${money(p.precio)}</span>
           </div>
-          <h3>${escapeHtml(p.titulo)}</h3>
-          <div class="card-meta">
-            <div class="row"><span class="icon">📅</span> ${formatFecha(p.fecha, p.hora)}</div>
-            <div class="row"><span class="icon">📍</span> ${escapeHtml(p.lugar)}</div>
-          </div>
-          ${mostrarAviso
-            ? `<div class="aviso-pocos">🔥 ¡Quedan 2 lugares disponibles!</div>`
-            : ""}
-          <div class="card-cta">
-            ${lleno
-              ? `<div class="btn-lleno">Completo 🙌</div>`
-              : `<button class="primary-btn full" data-id="${p.id}">Reservar mi lugar</button>`}
+          <div class="card-body">
+            <div class="fecha-chip">
+              <div class="cal">
+                <span class="dia">${f.dia}</span>
+                <span class="mes">${f.mes}</span>
+              </div>
+              <div class="cuando">
+                <div class="dsemana">${f.dsemana}</div>
+                <div class="hora">⏰ ${p.hora} hs</div>
+              </div>
+            </div>
+            <h3>${escapeHtml(p.titulo)}</h3>
+            <div class="card-meta">
+              <div class="row"><span class="icon">📍</span> ${escapeHtml(p.lugar)}</div>
+            </div>
+            ${mostrarAviso
+              ? `<div class="aviso-pocos">🔥 ¡Quedan 2 lugares disponibles!</div>`
+              : ""}
+            <div class="card-cta">
+              ${lleno
+                ? `<div class="btn-lleno">Completo 🙌</div>`
+                : `<button class="primary-btn full" data-id="${p.id}">Reservar mi lugar</button>`}
+            </div>
           </div>
         </article>`;
     }).join("");
