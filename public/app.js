@@ -237,7 +237,7 @@ function mostrarPasoPago(pago, minutos) {
     const msg =
       `Hola! Reservé un lugar en ${p.titulo} (${tipo}) del ${formatFecha(p.fecha, p.hora)} en ${p.lugar}` +
       (quien ? ` a nombre de ${quien}` : "") +
-      `. Te adjunto el comprobante de la transferencia.`;
+      `.`;
     wspBtn.href = `https://wa.me/${pago.whatsapp}?text=${encodeURIComponent(msg)}`;
     wspBtn.classList.remove("hidden");
   } else {
