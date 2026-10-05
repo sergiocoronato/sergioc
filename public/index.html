@@ -61,6 +61,7 @@
       <div id="paso-datos">
         <h3 id="modal-titulo">Reservar lugar</h3>
         <p class="modal-sub" id="modal-detalle"></p>
+        <div id="modal-disponibilidad" class="disponibilidad hidden"></div>
         <form id="form-reserva" class="form">
           <div class="field">
             <label>Nombre</label>
@@ -89,7 +90,7 @@
       <div id="paso-pago" class="hidden">
         <div class="ok-badge">✓ Lugar reservado</div>
         <h3>Asegurá el cupo</h3>
-        <p class="modal-sub">Transferí el importe y subí el comprobante. Tenés <strong id="pago-minutos"></strong> minutos antes de que se libere el lugar.</p>
+        <p class="modal-sub">Transferí el importe y enviá el comprobante por WhatsApp. Tenés <strong id="pago-minutos"></strong> minutos antes de que se libere el lugar.</p>
 
         <div class="pago-box" id="pago-box"></div>
 
@@ -100,23 +101,14 @@
           Enviar comprobante por WhatsApp
         </a>
 
-        <div id="wsp-sep" class="sep-o hidden"><span>o subilo acá</span></div>
-
-        <form id="form-comprobante" class="form">
-          <div class="field">
-            <label>Comprobante de transferencia (imagen o PDF)</label>
-            <input name="comprobante" type="file" accept="image/*,application/pdf" required />
-          </div>
-          <p class="form-error hidden" id="comprobante-error"></p>
-          <button type="submit" class="primary-btn full" id="btn-comprobante">Enviar comprobante</button>
-        </form>
+        <button class="primary-btn full" id="btn-listo-pago" style="margin-top:12px;">Listo, ya transferí</button>
       </div>
 
       <!-- Paso 3: listo -->
       <div id="paso-listo" class="hidden center">
         <div class="big-check">🎉</div>
         <h3>¡Listo!</h3>
-        <p class="modal-sub">Recibimos tu comprobante. El organizador va a confirmar tu lugar. ¡Nos vemos en la cancha!</p>
+        <p class="modal-sub">Tu lugar quedó reservado. Acordate de enviar el comprobante por WhatsApp así el organizador lo confirma. ¡Nos vemos en la cancha!</p>
         <button class="primary-btn full" id="btn-cerrar-final">Entendido</button>
       </div>
     </div>

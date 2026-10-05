@@ -114,6 +114,31 @@ function abrirModal(partido) {
     opt.textContent = i === 1 ? "1 lugar (solo yo)" : `${i} lugares`;
     sel.appendChild(opt);
   }
+
+  // Disponibilidad "motivadora" dentro del modal. Solo para 5v5 (10 cupos).
+  mostrarDisponibilidadModal(partido);
+}
+
+// Muestra una disponibilidad pensada para incentivar a sumarse (solo 5v5):
+// - "8/10" mientras queden 2 o mas lugares reales
+// - "9/10" cuando queda 1 lugar real
+// - "Completo" si esta lleno
+// En el 9v9 (u otros tamanos) no se muestra este contador.
+function mostrarDisponibilidadModal(partido) {
+  const el = $("#modal-disponibilidad");
+  if (Number(partido.cupos) !== 10) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  const disponiblesReales = Number(partido.disponibles) || 0;
+  let texto;
+  if (disponiblesReales <= 0) texto = "⚽ Cupos: Completo";
+  else if (disponiblesReales === 1) texto = "⚽ Lugares ocupados: 9/10";
+  else texto = "⚽ Lugares ocupados: 8/10";
+
+  el.textContent = texto;
+  el.classList.remove("hidden");
 }
 
 function cerrarModal() {
@@ -205,7 +230,6 @@ function mostrarPasoPago(pago, minutos) {
 
   // Boton de WhatsApp: solo si hay numero configurado.
   const wspBtn = $("#btn-wsp");
-  const wspSep = $("#wsp-sep");
   if (pago.whatsapp) {
     const p = partidoActual;
     const tipo = p.tipo === "9v9" ? "9 vs 9" : "5 vs 5";
@@ -216,42 +240,14 @@ function mostrarPasoPago(pago, minutos) {
       `. Te adjunto el comprobante de la transferencia.`;
     wspBtn.href = `https://wa.me/${pago.whatsapp}?text=${encodeURIComponent(msg)}`;
     wspBtn.classList.remove("hidden");
-    wspSep.classList.remove("hidden");
   } else {
     wspBtn.classList.add("hidden");
-    wspSep.classList.add("hidden");
   }
-
-  $("#form-comprobante").reset();
-  $("#comprobante-error").classList.add("hidden");
 }
 
-// ---- Comprobante ----
-$("#form-comprobante").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const err = $("#comprobante-error");
-  err.classList.add("hidden");
-  const btn = $("#btn-comprobante");
-  btn.disabled = true;
-  btn.textContent = "Enviando...";
-
-  const fd = new FormData(e.target);
-
-  try {
-    const res = await fetch(`/api/reservas/${reservaActual.id}/comprobante`, {
-      method: "POST",
-      body: fd,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "No se pudo enviar el comprobante.");
-    mostrarPaso("listo");
-  } catch (e2) {
-    err.textContent = e2.message;
-    err.classList.remove("hidden");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Enviar comprobante";
-  }
+// ---- Boton "Listo, ya transferí": lleva al mensaje final ----
+$("#btn-listo-pago").addEventListener("click", () => {
+  mostrarPaso("listo");
 });
 
 $("#btn-refrescar").addEventListener("click", cargarPartidos);
