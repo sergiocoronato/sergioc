@@ -257,6 +257,38 @@
   white-space: nowrap;
 }
 
+/* Boton "jugado" activo */
+.chip-btn.jugado-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Form de ajuste manual de asistencias */
+.form-ajuste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #0e1a30;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.form-ajuste input {
+  background: #0b1424;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.form-ajuste input[name="nombre"], .form-ajuste input[name="telefono"] { width: 140px; }
+.form-ajuste input[name="delta"] { width: 90px; }
+.form-ajuste input:focus { outline: none; border-color: var(--accent); }
+
 /* Grafico de ocupacion */
 .ocup-grafico { margin: 4px 0 16px; }
 .ocup-barra {

@@ -26,6 +26,9 @@ import {
   setConfig,
   incrementarVisitas,
   obtenerVisitas,
+  marcarJugado,
+  calcularAsistencias,
+  ajustarAsistenciaManual,
 } from "./db.js";
 
 // Normaliza un numero de WhatsApp (igual que config.js): solo digitos, agrega 9 a celulares AR.
@@ -315,6 +318,31 @@ app.post("/api/admin/partidos/:id/reserva-manual", requireAdmin, wrap(async (req
 // Total de visitas (solo admin)
 app.get("/api/admin/visitas", requireAdmin, wrap(async (req, res) => {
   res.json({ visitas: await obtenerVisitas() });
+}));
+
+// Marcar / desmarcar un partido como jugado (cuenta para asistencias)
+app.patch("/api/admin/partidos/:id/jugado", requireAdmin, wrap(async (req, res) => {
+  const jugado = req.body.jugado ? 1 : 0;
+  res.json(await marcarJugado(Number(req.params.id), jugado));
+}));
+
+// Tabla de asistencias (ranking)
+app.get("/api/admin/asistencias", requireAdmin, wrap(async (req, res) => {
+  res.json(await calcularAsistencias());
+}));
+
+// Ajuste manual de asistencias (+/- a un jugador)
+app.post("/api/admin/asistencias/ajuste", requireAdmin, wrap(async (req, res) => {
+  const nombre = String(req.body.nombre || "").trim();
+  const telefono = String(req.body.telefono || "").trim();
+  const delta = Number(req.body.delta);
+  if (!nombre && !telefono) {
+    return res.status(400).json({ error: "Indicá al menos un nombre o teléfono." });
+  }
+  if (!Number.isFinite(delta) || delta === 0) {
+    return res.status(400).json({ error: "El ajuste debe ser un número distinto de 0." });
+  }
+  res.json(await ajustarAsistenciaManual({ nombre, telefono, delta }));
 }));
 
 // Ver / editar datos de pago desde el panel

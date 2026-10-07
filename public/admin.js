@@ -45,6 +45,7 @@ function mostrarPanel() {
   cargarAdmin();
   cargarDatosPago();
   cargarVisitas();
+  cargarAsistencias();
 }
 
 async function cargarVisitas() {
@@ -212,6 +213,7 @@ function renderPartido(p) {
         <div class="ap-controls">
           <button class="chip-btn wsp" data-copiar="${p.id}">📋 Copiar confirmados (WhatsApp)</button>
           <button class="chip-btn" data-csv="${p.id}">⬇️ Exportar CSV</button>
+          <button class="chip-btn ${p.jugado ? "jugado-on" : ""}" data-jugado="${p.id}" data-val="${p.jugado ? 0 : 1}">${p.jugado ? "✅ Jugado" : "⚽ Marcar jugado"}</button>
           <button class="chip-btn" data-editar="${p.id}">✏️ Editar</button>
           ${p.estado !== "abierto" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="abierto">Reabrir</button>` : ""}
           ${p.estado !== "cerrado" ? `<button class="chip-btn" data-estado-partido="${p.id}" data-val="cerrado">Cerrar</button>` : ""}
@@ -337,6 +339,16 @@ function wireEventos(partidos) {
     e.stopPropagation();
     const partido = partidos.find((x) => x.id === Number(btn.dataset.csv));
     if (partido) exportarCSV(partido);
+  }));
+
+  $$("[data-jugado]").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    await fetch(`/api/admin/partidos/${btn.dataset.jugado}/jugado`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jugado: Number(btn.dataset.val) }),
+    });
+    cargarAdmin();
   }));
 
   $$("[data-editar]").forEach((btn) => btn.addEventListener("click", (e) => {
@@ -566,6 +578,85 @@ $("#form-pago").addEventListener("submit", async (e) => {
   }
   ok.classList.remove("hidden");
   setTimeout(() => ok.classList.add("hidden"), 2500);
+});
+
+// ---- Tabla de asistencias ----
+let asistenciasCache = [];
+
+async function cargarAsistencias() {
+  try {
+    const res = await fetch("/api/admin/asistencias");
+    if (!res.ok) return;
+    asistenciasCache = await res.json();
+    renderAsistencias();
+  } catch { /* ignorar */ }
+}
+
+function renderAsistencias() {
+  const cont = $("#tabla-asistencias");
+  if (!asistenciasCache.length) {
+    cont.innerHTML = `<p class="sin-reservas">Todavía no hay asistencias. Marcá partidos como "jugados" o cargá ajustes manuales.</p>`;
+    return;
+  }
+  const filas = asistenciasCache.map((a, i) => {
+    const medalla = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+    const manual = a.manual ? ` <span class="ap-sub">(${a.manual > 0 ? "+" : ""}${a.manual} manual)</span>` : "";
+    return `
+      <tr>
+        <td style="width:40px;text-align:center;">${medalla}</td>
+        <td>${escapeHtml(a.nombre)}</td>
+        <td>${a.telefono ? `<a class="tel-link" href="https://wa.me/${a.telefono.replace(/\D/g,"")}" target="_blank">${escapeHtml(a.telefono)}</a>` : "—"}</td>
+        <td style="text-align:center;font-weight:700;">${a.total}${manual}</td>
+      </tr>`;
+  }).join("");
+  cont.innerHTML = `
+    <table class="reservas-tabla">
+      <thead><tr><th>#</th><th>Jugador</th><th>Teléfono</th><th>Asistencias</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+}
+
+$("#form-ajuste").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("#ajuste-error");
+  err.textContent = "";
+  const fd = new FormData(e.target);
+  const res = await fetch("/api/admin/asistencias/ajuste", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nombre: fd.get("nombre"),
+      telefono: fd.get("telefono"),
+      delta: Number(fd.get("delta")),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    err.textContent = data.error || "No se pudo aplicar.";
+    return;
+  }
+  e.target.reset();
+  asistenciasCache = data;
+  renderAsistencias();
+});
+
+$("#btn-refrescar-asistencias").addEventListener("click", cargarAsistencias);
+
+$("#btn-csv-asistencias").addEventListener("click", () => {
+  if (!asistenciasCache.length) return;
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const filas = [["Puesto", "Jugador", "Teléfono", "Asistencias"]];
+  asistenciasCache.forEach((a, i) => filas.push([i + 1, a.nombre, a.telefono, a.total]));
+  const csv = "\uFEFF" + filas.map((f) => f.map(esc).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "tabla-asistencias.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 });
 
 checkAuth();

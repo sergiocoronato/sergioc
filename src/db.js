@@ -77,6 +77,17 @@ export async function initDb() {
   await agregarColumnaSiFalta("reservas", "comprobante_mime", "TEXT");
   // Cantidad de lugares que ocupa la reserva (titular + acompañantes). Por defecto 1.
   await agregarColumnaSiFalta("reservas", "cantidad", "INTEGER NOT NULL DEFAULT 1");
+  // Marca si el partido efectivamente se jugo (para la tabla de asistencias). 0 = no, 1 = si.
+  await agregarColumnaSiFalta("partidos", "jugado", "INTEGER NOT NULL DEFAULT 0");
+
+  // Ajustes manuales de asistencia por jugador (identificado por telefono normalizado).
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS asistencias_manual (
+      telefono TEXT PRIMARY KEY,
+      nombre   TEXT,
+      ajuste   INTEGER NOT NULL DEFAULT 0
+    )
+  `);
 }
 
 // Agrega una columna solo si todavia no existe (ALTER TABLE idempotente).
@@ -304,6 +315,79 @@ export async function incrementarVisitas() {
 export async function obtenerVisitas() {
   const r = await get(`SELECT valor FROM config WHERE clave = 'visitas'`);
   return Number(r?.valor || 0);
+}
+
+// ---- Partido jugado (para asistencias) ----
+export async function marcarJugado(id, jugado) {
+  await run(`UPDATE partidos SET jugado = ? WHERE id = ?`, [jugado ? 1 : 0, id]);
+  return obtenerPartido(id);
+}
+
+// Clave para agrupar un jugador: por telefono (solo digitos). Si no hay, por nombre+apellido normalizado.
+function claveJugador(nombre, apellido, telefono) {
+  const tel = String(telefono || "").replace(/\D/g, "");
+  if (tel) return "tel:" + tel;
+  return "nom:" + `${nombre || ""} ${apellido || ""}`.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// Calcula la tabla de asistencias: confirmados de partidos marcados como jugados,
+// agrupados por telefono, mas los ajustes manuales. Devuelve ranking ordenado desc.
+export async function calcularAsistencias() {
+  // Reservas confirmadas de partidos jugados.
+  const filas = await all(`
+    SELECT r.nombre, r.apellido, r.telefono, r.cantidad, r.creado_en
+    FROM reservas r
+    JOIN partidos p ON p.id = r.partido_id
+    WHERE r.estado = 'confirmado' AND p.jugado = 1
+  `);
+
+  const mapa = new Map(); // clave -> { nombre, telefono, auto }
+  for (const r of filas) {
+    const clave = claveJugador(r.nombre, r.apellido, r.telefono);
+    const prev = mapa.get(clave) || { nombre: "", telefono: r.telefono || "", auto: 0 };
+    // cada reserva confirmada cuenta como 1 asistencia (no multiplicamos por cantidad: la tabla es de personas)
+    prev.auto += 1;
+    prev.nombre = `${r.nombre || ""} ${r.apellido || ""}`.trim(); // ultimo nombre usado
+    if (r.telefono) prev.telefono = r.telefono;
+    mapa.set(clave, prev);
+  }
+
+  // Sumar ajustes manuales.
+  const manuales = await all(`SELECT telefono, nombre, ajuste FROM asistencias_manual`);
+  for (const m of manuales) {
+    const clave = claveJugador(m.nombre, "", m.telefono);
+    const prev = mapa.get(clave) || { nombre: m.nombre || "", telefono: m.telefono || "", auto: 0 };
+    prev.manual = (prev.manual || 0) + Number(m.ajuste || 0);
+    if (!prev.nombre && m.nombre) prev.nombre = m.nombre;
+    mapa.set(clave, prev);
+  }
+
+  const ranking = [...mapa.values()].map((v) => ({
+    nombre: v.nombre || "(sin nombre)",
+    telefono: v.telefono || "",
+    auto: v.auto || 0,
+    manual: v.manual || 0,
+    total: (v.auto || 0) + (v.manual || 0),
+  }));
+  ranking.sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
+  return ranking;
+}
+
+// Suma (o resta) un ajuste manual de asistencias a un jugador.
+// Guardamos en la columna 'telefono' el telefono en crudo (solo digitos); si no hay, el nombre normalizado.
+// Asi claveJugador() lo agrupa igual que las reservas.
+export async function ajustarAsistenciaManual({ nombre, telefono, delta }) {
+  const tel = String(telefono || "").replace(/\D/g, "");
+  const guardarTel = tel || "";
+  const guardarNombre = nombre || "";
+  // Clave unica de la fila manual (para el ON CONFLICT): telefono si hay, si no el nombre.
+  const claveFila = tel || `nombre:${guardarNombre.trim().toLowerCase()}`;
+  await run(
+    `INSERT INTO asistencias_manual (telefono, nombre, ajuste) VALUES (?, ?, ?)
+     ON CONFLICT(telefono) DO UPDATE SET ajuste = ajuste + excluded.ajuste, nombre = excluded.nombre`,
+    [claveFila, guardarNombre, Number(delta) || 0]
+  );
+  return calcularAsistencias();
 }
 
 // Elimina una reserva (libera el cupo). Usado por el admin.

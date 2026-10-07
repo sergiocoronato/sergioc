@@ -134,6 +134,28 @@
           <div id="resultado-busqueda"></div>
           <div id="admin-lista"></div>
         </section>
+
+        <!-- Tabla de asistencias -->
+        <section class="panel-box wide">
+          <div class="section-head" style="margin-bottom:14px;">
+            <h2>🏆 Tabla de asistencias</h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button id="btn-csv-asistencias" class="ghost-btn">⬇️ CSV</button>
+              <button id="btn-refrescar-asistencias" class="ghost-btn">↻ Actualizar</button>
+            </div>
+          </div>
+          <p class="ap-sub" style="margin-bottom:12px;">Cuenta los confirmados de los partidos marcados como <strong>jugados</strong>. Agrupa por teléfono.</p>
+
+          <form id="form-ajuste" class="form-ajuste">
+            <input name="nombre" placeholder="Nombre" />
+            <input name="telefono" placeholder="Teléfono" />
+            <input name="delta" type="number" placeholder="+/- asist." title="Ej: 3 para sumar, -1 para restar" />
+            <button class="chip-btn wsp" type="submit">Aplicar ajuste</button>
+            <span class="agregar-error" id="ajuste-error"></span>
+          </form>
+
+          <div id="tabla-asistencias"></div>
+        </section>
       </div>
     </main>
   </div>
