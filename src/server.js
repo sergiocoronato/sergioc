@@ -24,6 +24,8 @@ import {
   crearReservaManual,
   getConfigVarias,
   setConfig,
+  incrementarVisitas,
+  obtenerVisitas,
 } from "./db.js";
 
 // Normaliza un numero de WhatsApp (igual que config.js): solo digitos, agrega 9 a celulares AR.
@@ -99,6 +101,12 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 // Datos de pago que ve el jugador
 app.get("/api/pago", wrap(async (req, res) => {
   res.json(await obtenerDatosPago());
+}));
+
+// Registrar una visita a la pagina (lo llama el front publico al cargar)
+app.post("/api/visita", wrap(async (req, res) => {
+  await incrementarVisitas();
+  res.json({ ok: true });
 }));
 
 // Listar partidos abiertos (con cupos)
@@ -302,6 +310,11 @@ app.post("/api/admin/partidos/:id/reserva-manual", requireAdmin, wrap(async (req
     const [code, msg] = map[err.message] || [500, "Error al agregar."];
     res.status(code).json({ error: msg });
   }
+}));
+
+// Total de visitas (solo admin)
+app.get("/api/admin/visitas", requireAdmin, wrap(async (req, res) => {
+  res.json({ visitas: await obtenerVisitas() });
 }));
 
 // Ver / editar datos de pago desde el panel

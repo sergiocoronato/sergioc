@@ -44,6 +44,16 @@ function mostrarPanel() {
   $("#panel-view").classList.remove("hidden");
   cargarAdmin();
   cargarDatosPago();
+  cargarVisitas();
+}
+
+async function cargarVisitas() {
+  try {
+    const res = await fetch("/api/admin/visitas");
+    if (!res.ok) return;
+    const { visitas } = await res.json();
+    $("#contador-visitas").textContent = `👁 ${Number(visitas).toLocaleString("es-AR")} visitas`;
+  } catch { /* ignorar */ }
 }
 
 $("#form-login").addEventListener("submit", async (e) => {
@@ -507,7 +517,7 @@ function verComprobante(reservaId, mime) {
 $("#comp-close").addEventListener("click", () => $("#modal-comp").classList.add("hidden"));
 $("#modal-comp").addEventListener("click", (e) => { if (e.target.id === "modal-comp") $("#modal-comp").classList.add("hidden"); });
 
-$("#btn-refrescar-admin").addEventListener("click", cargarAdmin);
+$("#btn-refrescar-admin").addEventListener("click", () => { cargarAdmin(); cargarVisitas(); });
 
 // Buscador de jugador
 $("#buscador").addEventListener("input", (e) => {

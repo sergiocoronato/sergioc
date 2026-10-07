@@ -259,3 +259,6 @@ $("#btn-refrescar").addEventListener("click", cargarPartidos);
 
 cargarPartidos();
 setInterval(cargarPartidos, 30000); // refresco automatico
+
+// Registrar la visita (una vez por carga de pagina).
+fetch("/api/visita", { method: "POST" }).catch(() => {});

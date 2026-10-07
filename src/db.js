@@ -291,6 +291,21 @@ export async function setConfig(clave, valor) {
   );
 }
 
+// Suma 1 al contador de visitas y devuelve el total.
+export async function incrementarVisitas() {
+  await run(
+    `INSERT INTO config (clave, valor) VALUES ('visitas', '1')
+     ON CONFLICT(clave) DO UPDATE SET valor = CAST(valor AS INTEGER) + 1`
+  );
+  const r = await get(`SELECT valor FROM config WHERE clave = 'visitas'`);
+  return Number(r?.valor || 0);
+}
+
+export async function obtenerVisitas() {
+  const r = await get(`SELECT valor FROM config WHERE clave = 'visitas'`);
+  return Number(r?.valor || 0);
+}
+
 // Elimina una reserva (libera el cupo). Usado por el admin.
 export async function eliminarReserva(id) {
   return run(`DELETE FROM reservas WHERE id = ?`, [id]);
