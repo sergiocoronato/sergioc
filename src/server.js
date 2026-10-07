@@ -29,6 +29,7 @@ import {
   marcarJugado,
   calcularAsistencias,
   ajustarAsistenciaManual,
+  borrarAsistenciaManual,
 } from "./db.js";
 
 // Normaliza un numero de WhatsApp (igual que config.js): solo digitos, agrega 9 a celulares AR.
@@ -343,6 +344,13 @@ app.post("/api/admin/asistencias/ajuste", requireAdmin, wrap(async (req, res) =>
     return res.status(400).json({ error: "El ajuste debe ser un número distinto de 0." });
   }
   res.json(await ajustarAsistenciaManual({ nombre, telefono, delta }));
+}));
+
+// Borrar el ajuste manual de un jugador
+app.post("/api/admin/asistencias/borrar", requireAdmin, wrap(async (req, res) => {
+  const clave = String(req.body.clave || "").trim();
+  if (!clave) return res.status(400).json({ error: "Falta la clave." });
+  res.json(await borrarAsistenciaManual(clave));
 }));
 
 // Ver / editar datos de pago desde el panel

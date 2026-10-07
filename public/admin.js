@@ -601,19 +601,33 @@ function renderAsistencias() {
   const filas = asistenciasCache.map((a, i) => {
     const medalla = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
     const manual = a.manual ? ` <span class="ap-sub">(${a.manual > 0 ? "+" : ""}${a.manual} manual)</span>` : "";
+    const borrar = a.claveManual
+      ? `<button class="icon-btn no" data-borrar-ajuste="${escapeHtml(a.claveManual)}" title="Borrar ajuste manual">🗑</button>`
+      : "";
     return `
       <tr>
         <td style="width:40px;text-align:center;">${medalla}</td>
         <td>${escapeHtml(a.nombre)}</td>
         <td>${a.telefono ? `<a class="tel-link" href="https://wa.me/${a.telefono.replace(/\D/g,"")}" target="_blank">${escapeHtml(a.telefono)}</a>` : "—"}</td>
         <td style="text-align:center;font-weight:700;">${a.total}${manual}</td>
+        <td style="text-align:center;">${borrar}</td>
       </tr>`;
   }).join("");
   cont.innerHTML = `
     <table class="reservas-tabla">
-      <thead><tr><th>#</th><th>Jugador</th><th>Teléfono</th><th>Asistencias</th></tr></thead>
+      <thead><tr><th>#</th><th>Jugador</th><th>Teléfono</th><th>Asistencias</th><th></th></tr></thead>
       <tbody>${filas}</tbody>
     </table>`;
+
+  $$("[data-borrar-ajuste]").forEach((btn) => btn.addEventListener("click", async () => {
+    if (!confirm("¿Borrar el ajuste manual de este jugador? (no afecta las asistencias de partidos jugados)")) return;
+    const res = await fetch("/api/admin/asistencias/borrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clave: btn.dataset.borrarAjuste }),
+    });
+    if (res.ok) { asistenciasCache = await res.json(); renderAsistencias(); }
+  }));
 }
 
 $("#form-ajuste").addEventListener("submit", async (e) => {

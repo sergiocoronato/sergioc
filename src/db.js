@@ -358,6 +358,7 @@ export async function calcularAsistencias() {
     const clave = claveJugador(m.nombre, "", m.telefono);
     const prev = mapa.get(clave) || { nombre: m.nombre || "", telefono: m.telefono || "", auto: 0 };
     prev.manual = (prev.manual || 0) + Number(m.ajuste || 0);
+    prev.claveManual = m.telefono; // clave de la fila manual (para poder borrarla)
     if (!prev.nombre && m.nombre) prev.nombre = m.nombre;
     mapa.set(clave, prev);
   }
@@ -368,9 +369,16 @@ export async function calcularAsistencias() {
     auto: v.auto || 0,
     manual: v.manual || 0,
     total: (v.auto || 0) + (v.manual || 0),
+    claveManual: v.claveManual || null, // presente solo si tiene ajuste manual
   }));
   ranking.sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
   return ranking;
+}
+
+// Borra el ajuste manual de un jugador (por la clave guardada: telefono en digitos o 'nombre:...').
+export async function borrarAsistenciaManual(claveFila) {
+  await run(`DELETE FROM asistencias_manual WHERE telefono = ?`, [claveFila]);
+  return calcularAsistencias();
 }
 
 // Suma (o resta) un ajuste manual de asistencias a un jugador.
