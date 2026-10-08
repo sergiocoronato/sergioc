@@ -37,6 +37,16 @@ function debeAvisarPocos(p) {
   return p.ocupados >= umbralAviso(Number(p.cupos));
 }
 
+// Texto del cartel de pocos lugares.
+// 5v5 (10 cupos): mensaje fijo de urgencia "2 lugares".
+// 9v9 y otros: muestra la cantidad REAL que queda (1 o 2).
+function textoAviso(p) {
+  if (Number(p.cupos) === 10) return "🔥 ¡Quedan 2 lugares disponibles!";
+  const d = Number(p.disponibles) || 0;
+  if (d <= 1) return "🔥 ¡Último lugar disponible!";
+  return `🔥 ¡Quedan ${d} lugares disponibles!`;
+}
+
 function toast(msg) {
   let t = $(".toast");
   if (!t) {
@@ -90,7 +100,7 @@ async function cargarPartidos() {
               <div class="row"><span class="icon">📍</span> ${escapeHtml(p.lugar)}</div>
             </div>
             ${mostrarAviso
-              ? `<div class="aviso-pocos">🔥 ¡Quedan 2 lugares disponibles!</div>`
+              ? `<div class="aviso-pocos">${textoAviso(p)}</div>`
               : ""}
             <div class="card-cta">
               ${lleno
