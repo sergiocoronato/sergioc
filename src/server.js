@@ -19,6 +19,7 @@ import {
   adjuntarComprobante,
   obtenerComprobante,
   listarReservasPorPartido,
+  listarTodasLasReservas,
   cambiarEstadoReserva,
   eliminarReserva,
   crearReservaManual,
@@ -210,10 +211,11 @@ app.get("/api/admin/estado", (req, res) => {
 // Listar todos los partidos (incluye cerrados)
 app.get("/api/admin/partidos", requireAdmin, wrap(async (req, res) => {
   const partidos = await listarPartidos({ soloAbiertos: false });
-  const conReservas = [];
-  for (const p of partidos) {
-    conReservas.push({ ...p, reservas: await listarReservasPorPartido(p.id) });
-  }
+  const reservasPorPartido = await listarTodasLasReservas(); // 1 sola consulta
+  const conReservas = partidos.map((p) => ({
+    ...p,
+    reservas: reservasPorPartido.get(Number(p.id)) || [],
+  }));
   res.json(conReservas);
 }));
 

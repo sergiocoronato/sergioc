@@ -155,10 +155,22 @@ export async function listarPartidos({ soloAbiertos = false } = {}) {
   }
   const partidos = await all(`SELECT * FROM partidos ${where} ORDER BY fecha ASC, hora ASC`);
 
+  // Traemos TODOS los conteos en una sola consulta (en vez de 2 por partido).
+  const conteos = await all(`
+    SELECT partido_id,
+      COALESCE(SUM(CASE WHEN estado IN ('pendiente','confirmado') THEN COALESCE(cantidad,1) ELSE 0 END), 0) AS ocupados,
+      COALESCE(SUM(CASE WHEN estado = 'confirmado' THEN COALESCE(cantidad,1) ELSE 0 END), 0) AS confirmados
+    FROM reservas
+    GROUP BY partido_id
+  `);
+  const mapaConteo = new Map();
+  for (const c of conteos) mapaConteo.set(Number(c.partido_id), { ocupados: Number(c.ocupados), confirmados: Number(c.confirmados) });
+
   const out = [];
   for (const p of partidos) {
-    const ocupados = await contarOcupados(p.id);
-    const confirmados = await contarConfirmados(p.id);
+    const c = mapaConteo.get(Number(p.id)) || { ocupados: 0, confirmados: 0 };
+    const ocupados = c.ocupados;
+    const confirmados = c.confirmados;
     out.push({
       ...p,
       ocupados,
@@ -275,6 +287,19 @@ export async function obtenerComprobante(id) {
 
 export async function listarReservasPorPartido(partido_id) {
   return all(`SELECT ${COLS_RESERVA} FROM reservas WHERE partido_id = ? ORDER BY creado_en ASC`, [partido_id]);
+}
+
+// Trae TODAS las reservas de todos los partidos en una sola consulta (para el panel admin).
+// Devuelve un Map: partido_id -> array de reservas.
+export async function listarTodasLasReservas() {
+  const filas = await all(`SELECT ${COLS_RESERVA} FROM reservas ORDER BY creado_en ASC`);
+  const mapa = new Map();
+  for (const r of filas) {
+    const pid = Number(r.partido_id);
+    if (!mapa.has(pid)) mapa.set(pid, []);
+    mapa.get(pid).push(r);
+  }
+  return mapa;
 }
 
 export async function cambiarEstadoReserva(id, estado) {
