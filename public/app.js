@@ -258,6 +258,26 @@ function mostrarPasoPago(pago, minutos) {
     });
   });
 
+  // Botón de WhatsApp: abre el chat hacia el organizador con los datos de la reserva.
+  const wspBtn = $("#btn-wsp");
+  if (pago.whatsapp) {
+    const p = partidoActual;
+    const tipo = p.tipo === "9v9" ? "9 vs 9" : "5 vs 5";
+    const lugares = Number(reservaActual?.cantidad) || 1;
+    const quien = reservaActual ? `${reservaActual.nombre} ${reservaActual.apellido}` : "";
+    const extra = lugares > 1 ? ` (+${lugares - 1})` : "";
+    const msg =
+      `Hola! Reservé en Bariloche Fútbol 🟢\n` +
+      `⚽ ${p.titulo} (${tipo})\n` +
+      `📅 ${formatFecha(p.fecha, p.hora)}\n` +
+      `📍 ${p.lugar}\n` +
+      `👤 ${quien}${extra}\n` +
+      `Ya transferí, te paso el comprobante.`;
+    wspBtn.href = `https://wa.me/${pago.whatsapp}?text=${encodeURIComponent(msg)}`;
+    wspBtn.classList.remove("hidden");
+  } else {
+    wspBtn.classList.add("hidden");
+  }
 }
 
 // ---- Boton "Listo, ya transferí": lleva al mensaje final ----
