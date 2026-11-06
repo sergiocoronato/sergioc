@@ -280,9 +280,9 @@ function mostrarPasoPago(pago, minutos) {
   }
 }
 
-// ---- Boton "Listo, ya transferí": lleva al mensaje final ----
-$("#btn-listo-pago").addEventListener("click", () => {
-  mostrarPaso("listo");
+// Al tocar "Avisar por WhatsApp", abre el chat y pasa al mensaje final.
+$("#btn-wsp").addEventListener("click", () => {
+  setTimeout(() => mostrarPaso("listo"), 400);
 });
 
 $("#btn-refrescar").addEventListener("click", cargarPartidos);
