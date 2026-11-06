@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 import { config } from "./config.js";
+import { avisarNuevaReserva } from "./telegram.js";
 import {
   initDb,
   listarPartidos,
@@ -149,9 +150,14 @@ app.post("/api/partidos/:id/reservar", async (req, res) => {
     });
     res.status(201).json({
       reserva,
-      pago: config.pago,
+      pago: await obtenerDatosPago(),
       minutosReserva: config.minutosReserva,
     });
+
+    // Aviso por Telegram (en segundo plano, no bloquea la respuesta al jugador).
+    obtenerPartido(partido_id)
+      .then((partido) => avisarNuevaReserva({ reserva, partido }))
+      .catch((e) => console.error("Aviso Telegram falló:", e.message));
   } catch (err) {
     const map = {
       PARTIDO_NO_EXISTE: [404, "El partido no existe."],

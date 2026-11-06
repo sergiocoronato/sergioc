@@ -43,4 +43,10 @@ export const config = {
 
   // Minutos que se reserva el cupo antes de que expire si no suben comprobante.
   minutosReserva: Number(process.env.MINUTOS_RESERVA || 30),
+
+  // Aviso por Telegram cuando alguien reserva (opcional: si falta el token, no se envía nada).
+  telegram: {
+    token: process.env.TELEGRAM_TOKEN || "9156042785:AAFC3YulDXjaw7GShlVevCNv7BBQM3HCbvU",
+    chatId: process.env.TELEGRAM_CHAT_ID || "6393065326",
+  },
 };
